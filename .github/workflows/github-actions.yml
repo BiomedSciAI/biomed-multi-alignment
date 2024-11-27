@@ -30,4 +30,4 @@ jobs:
         pre-commit run --all-files --show-diff-on-failure
     - name: Test with pytest
       run: |
-        python -m pytest --capture=no mammal/examples/tests/test_simple_inference.py
+        python -m pytest --capture=no .
