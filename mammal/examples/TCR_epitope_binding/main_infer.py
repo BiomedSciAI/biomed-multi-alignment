@@ -8,8 +8,8 @@ from mammal.keys import (
     ENCODER_INPUTS_ATTENTION_MASK,
     ENCODER_INPUTS_STR,
     ENCODER_INPUTS_TOKENS,
-    SCORES,
     SAMPLE_ID,
+    SCORES,
 )
 from mammal.model import Mammal
 
@@ -20,11 +20,11 @@ TASK_NAMES = ["TCR_epitope_bind"]
 @click.argument("task_name", default="TCR_epitope_bind")
 @click.argument(
     "TCR_beta_seq",
-    default="GAVVSQHPSWVICKSGTSVKIECRSLDFQATTMFWYRQFPKQSLMLMATSNEGSKATYEQGVEKDKFLINHASLTLSTLTVTSAHPEDSSFYICSASEGTSSYEQYFGPGTRLTVT",  #NAGVTQTPKFQVLKTGQSMTLQCAQDMNHEYMSWYRQDPGMGLRLIHYSVGAGITDQGEVPNGYNVSRSTTEDFPLRLLSAAPSQTSVYFCASSYSWDRVLEQYFGPGTRLTVT
+    default="GAVVSQHPSWVICKSGTSVKIECRSLDFQATTMFWYRQFPKQSLMLMATSNEGSKATYEQGVEKDKFLINHASLTLSTLTVTSAHPEDSSFYICSASEGTSSYEQYFGPGTRLTVT",  # NAGVTQTPKFQVLKTGQSMTLQCAQDMNHEYMSWYRQDPGMGLRLIHYSVGAGITDQGEVPNGYNVSRSTTEDFPLRLLSAAPSQTSVYFCASSYSWDRVLEQYFGPGTRLTVT
 )
 @click.argument(
     "epitope_seq",
-    default="FLKEKGGL", #LLQTGIHVRVSQPSL
+    default="FLKEKGGL",  # LLQTGIHVRVSQPSL
 )
 @click.option(
     "--device", default="cpu", help="Specify the device to use (default: 'cpu')."
@@ -32,7 +32,9 @@ TASK_NAMES = ["TCR_epitope_bind"]
 def main(TCR_beta_seq: str, epitope_seq: str, device: str):
     task_name = "TCR_epitope_bind"
     task_dict = load_model(task_name=task_name, device=device)
-    result = task_infer(task_dict=task_dict, TCR_beta_seq=TCR_beta_seq, epitope_seq=epitope_seq)
+    result = task_infer(
+        task_dict=task_dict, TCR_beta_seq=TCR_beta_seq, epitope_seq=epitope_seq
+    )
     print(f"The prediction for {epitope_seq} and {TCR_beta_seq} is {result}")
 
 
@@ -94,8 +96,7 @@ def task_infer(task_dict: dict, TCR_beta_seq: str, epitope_seq: str) -> dict:
     # Create and load sample
     sample_dict = dict()
     # Formatting prompt to match pre-training syntax
-    
-    
+
     if treat_inputs_as_general_proteins:
         # Treat inputs as general proteins:
         sample_dict[ENCODER_INPUTS_STR] = (
@@ -106,10 +107,8 @@ def task_infer(task_dict: dict, TCR_beta_seq: str, epitope_seq: str) -> dict:
         sample_dict[ENCODER_INPUTS_STR] = (
             f"<@TOKENIZER-TYPE=AA><BINDING_AFFINITY_CLASS><SENTINEL_ID_0><@TOKENIZER-TYPE=AA><MOLECULAR_ENTITY><MOLECULAR_ENTITY_TCR_BETA_VDJ><SEQUENCE_NATURAL_START>{TCR_beta_seq}<SEQUENCE_NATURAL_END><@TOKENIZER-TYPE=AA><MOLECULAR_ENTITY><MOLECULAR_ENTITY_EPITOPE><SEQUENCE_NATURAL_START>{epitope_seq}<SEQUENCE_NATURAL_END><EOS>"
         )
-    
-    
-    
-    sample_dict[SAMPLE_ID] = '1'
+
+    sample_dict[SAMPLE_ID] = "1"
 
     # Tokenize
     tokenizer_op(
