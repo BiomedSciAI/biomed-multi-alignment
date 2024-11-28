@@ -1,3 +1,4 @@
+import socket
 from pathlib import Path
 
 import hydra
@@ -25,6 +26,8 @@ def tmp_model_dir(tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def finetuned_model_dir(tmp_model_dir: str):
+    if "ccc" not in socket.gethostname():
+        pytest.skip("Because I want so")
     model_dir = tmp_model_dir
     print(f"\n{model_dir=}")
     OVERRIDES = [
