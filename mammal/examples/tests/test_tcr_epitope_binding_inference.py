@@ -13,10 +13,12 @@ def test_infer() -> None:
     # tcr_beta_seq = "GAVVSQHPSWVICKSGTSVKIECRSLDFQATTMFWYRQFPKQSLMLMATSNEGSKATYEQGVEKDKFLINHASLTLSTLTVTSAHPEDSSFYICSASEGTSSYEQYFGPGTRLTVT"
     # epitope_seq = "FLKEKGGL"
 
-    task_name = "TCR_epitope_bind"
-    task_dict = load_model(task_name=task_name, device="cpu")
+    model_inst, tokenizer_op = load_model(device="cpu")
     result = task_infer(
-        task_dict=task_dict, tcr_beta_seq=tcr_beta_seq, epitope_seq=epitope_seq
+        model=model_inst,
+        tokenizer_op=tokenizer_op,
+        tcr_beta_seq=tcr_beta_seq,
+        epitope_seq=epitope_seq,
     )
     print(f"The prediction for {epitope_seq} and {tcr_beta_seq} is {result}")
 

@@ -12,11 +12,8 @@ from mammal.keys import (
 )
 from mammal.model import Mammal
 
-TASK_NAMES = ["TCR_epitope_bind"]
-
 
 @click.command()
-@click.argument("task_name", default="TCR_epitope_bind")
 @click.argument(
     "tcr_beta_seq",
     default="GAVVSQHPSWVICKSGTSVKIECRSLDFQATTMFWYRQFPKQSLMLMATSNEGSKATYEQGVEKDKFLINHASLTLSTLTVTSAHPEDSSFYICSASEGTSSYEQYFGPGTRLTVT",  # alternative binder 1
@@ -24,24 +21,25 @@ TASK_NAMES = ["TCR_epitope_bind"]
 )
 @click.argument(
     "epitope_seq",
-    default="FLKEKGGL", # alternative binder 1  
+    default="FLKEKGGL",  # alternative binder 1
     # Alternative binder 2: LLQTGIHVRVSQPSL
 )
-
 @click.option(
     "--device", default="cpu", help="Specify the device to use (default: 'cpu')."
 )
 def main(tcr_beta_seq: str, epitope_seq: str, device: str):
-    task_name = "TCR_epitope_bind"
-    task_dict = load_model(task_name=task_name, device=device)
+    model, tokenizer_op = load_model(device=device)
     result = task_infer(
-        task_dict=task_dict, tcr_beta_seq=tcr_beta_seq, epitope_seq=epitope_seq
+        model=model,
+        tokenizer_op=tokenizer_op,
+        tcr_beta_seq=tcr_beta_seq,
+        epitope_seq=epitope_seq,
     )
     print(f"The prediction for {epitope_seq} and {tcr_beta_seq} is {result}")
 
 
-def load_model(device: str, task_name: str = "TCR_epitope_bind") -> dict:
-    path = "ibm/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind" # change to "ibm/biomed.omics.bl.sm.ma-ted-458m" to try on the base model
+def load_model(device: str) -> tuple["Mammal", "ModularTokenizerOp"]:
+    path = "ibm/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind"  # change to "ibm/biomed.omics.bl.sm.ma-ted-458m" to try on the base model
 
     # Load Model and set to evaluation mode
     model = Mammal.from_pretrained(path)
@@ -51,12 +49,7 @@ def load_model(device: str, task_name: str = "TCR_epitope_bind") -> dict:
     # Load Tokenizer
     tokenizer_op = ModularTokenizerOp.from_pretrained(path)
 
-    task_dict = dict(
-        task_name=task_name,
-        model=model,
-        tokenizer_op=tokenizer_op,
-    )
-    return task_dict
+    return model, tokenizer_op
 
 
 def process_model_output(
@@ -85,14 +78,13 @@ def process_model_output(
     return ans
 
 
-def task_infer(task_dict: dict, tcr_beta_seq: str, epitope_seq: str) -> dict:
-    task_name = task_dict["task_name"]
-    model = task_dict["model"]
-    tokenizer_op = task_dict["tokenizer_op"]
+def task_infer(
+    model: "Mammal",
+    tokenizer_op: ModularTokenizerOp,
+    tcr_beta_seq: str,
+    epitope_seq: str,
+) -> dict:
     treat_inputs_as_general_proteins = False
-
-    if task_name not in TASK_NAMES:
-        print(f"The {task_name=} is incorrect. Valid names are {TASK_NAMES}")
 
     # Create and load sample
     sample_dict = dict()
