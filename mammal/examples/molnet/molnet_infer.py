@@ -83,6 +83,27 @@ def process_model_output(
     return ans
 
 
+def task_infer(task_dict: dict, smiles_seq: str) -> dict:
+    task_name = task_dict["task_name"]
+    model = task_dict["model"]
+    tokenizer_op = task_dict["tokenizer_op"]
+
+    if task_name not in TASK_NAMES:
+        print(f"The {task_name=} is incorrect. Valid names are {TASK_NAMES}")
+
+    sample_dict = create_sample_dict(task_name, smiles_seq, tokenizer_op, model)
+    # Generate Prediction
+    batch_dict = get_batch_dict(model, sample_dict)
+
+    # Post-process the model's output
+    result = process_model_output(
+        tokenizer_op=tokenizer_op,
+        decoder_output=batch_dict[CLS_PRED][0],
+        decoder_output_scores=batch_dict[SCORES][0],
+    )
+    return result
+
+
 def create_sample_dict(task_name, smiles_seq, tokenizer_op, model):
 
     # Create and load sample
@@ -115,27 +136,6 @@ def get_batch_dict(model, sample_dict):
         return_dict_in_generate=True,
         max_new_tokens=5,
     )
-
-
-def task_infer(task_dict: dict, smiles_seq: str) -> dict:
-    task_name = task_dict["task_name"]
-    model = task_dict["model"]
-    tokenizer_op = task_dict["tokenizer_op"]
-
-    if task_name not in TASK_NAMES:
-        print(f"The {task_name=} is incorrect. Valid names are {TASK_NAMES}")
-
-    sample_dict = create_sample_dict(task_name, smiles_seq, tokenizer_op, model)
-    # Generate Prediction
-    batch_dict = get_batch_dict(model, sample_dict)
-
-    # Post-process the model's output
-    result = process_model_output(
-        tokenizer_op=tokenizer_op,
-        decoder_output=batch_dict[CLS_PRED][0],
-        decoder_output_scores=batch_dict[SCORES][0],
-    )
-    return result
 
 
 if __name__ == "__main__":
