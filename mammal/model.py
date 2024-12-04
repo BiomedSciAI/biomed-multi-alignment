@@ -74,6 +74,19 @@ class MammalConfig(PretrainedConfig):
         return config
 
     @classmethod
+    def from_path(
+        cls, config_filepath: str, *, allow_config_mismatch: bool = False
+    ) -> "MammalConfig":
+
+        with open(config_filepath, encoding="utf-8") as f:
+            config_dict = json.load(f)
+        config = MammalConfig.from_dict(
+            config_dict, allow_config_mismatch=allow_config_mismatch
+        )
+
+        return config
+
+    @classmethod
     def get_deprecated_arguments(cls) -> list[str]:
         """Property of deprecated arguments to support backward compatibility."""
         deprecated_arguments = ["load_weights", "t5_pretrained_name"]
@@ -442,9 +455,9 @@ class Mammal(ModelHubMixin, torch.nn.Module):
 
             if isinstance(config, str):
                 # Config path was given or was located in the parent directory
-                with open(config, encoding="utf-8") as f:
-                    config = json.load(f)
-                config = MammalConfig.from_dict(config)
+                config = MammalConfig.from_path(
+                    config_filepath=config, allow_config_mismatch=allow_config_mismatch
+                )
 
             # override configuration if requested
             if config_overrides is not None:
@@ -484,10 +497,8 @@ class Mammal(ModelHubMixin, torch.nn.Module):
             if config is None:
                 config = os.path.join(pretrained_model_name_or_path, CONFIG_NAME)
             if isinstance(config, str):
-                with open(config, encoding="utf-8") as f:
-                    config = json.load(f)
-                config = MammalConfig.from_dict(
-                    config, allow_config_mismatch=allow_config_mismatch
+                config = MammalConfig.from_path(
+                    config_filepath=config, allow_config_mismatch=allow_config_mismatch
                 )
 
             # override configuration if requested
