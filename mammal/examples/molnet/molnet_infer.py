@@ -33,7 +33,7 @@ def main(task_name: str, smiles_seq: str, device: str):
 def load_model(task_name: str, device: str) -> dict:
     match task_name:
         case "BBBP":
-            path = "SagiPolaczek/test4Simona"  # "ibm/biomed.omics.bl.sm.ma-ted-458m.moleculenet_bbbp"
+            path = "ibm/biomed.omics.bl.sm.ma-ted-458m.moleculenet_bbbp"
         case "TOXICITY":
             path = "ibm/biomed.omics.bl.sm.ma-ted-458m.moleculenet_clintox_tox"
         case "FDA_APPR":
