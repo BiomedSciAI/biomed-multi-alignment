@@ -19,14 +19,13 @@ def _clean_hydra() -> None:
 
 @pytest.fixture(scope="session")
 def model_dir(tmp_path_factory: pytest.TempPathFactory):
+    if "ccc" not in socket.gethostname():
+        pytest.skip("Full tests requires resources")
+
     model_dir_path = tmp_path_factory.mktemp("test_protein_solubility") / "test"
     return model_dir_path
 
 
-@pytest.mark.skipif(
-    "ccc" not in socket.gethostname(),
-    reason="Train consumes too much memory for a Travis run.",
-)
 def test_finetune(model_dir: str):
     print(model_dir)
     OVERRIDES = [
@@ -46,10 +45,6 @@ def test_finetune(model_dir: str):
     main_finetune(cfg)
 
 
-@pytest.mark.skipif(
-    "ccc" not in socket.gethostname(),
-    reason="Train consumes too much memory for a Travis run.",
-)
 def test_evaluate(model_dir: str):
     OVERRIDES = [
         "track_clearml=null",  # Travis cannot connect to ClearML at the moment. We might be able to fix it with a dedicated user + config credentials.
@@ -69,10 +64,6 @@ def test_evaluate(model_dir: str):
     main_finetune(cfg)
 
 
-@pytest.mark.skipif(
-    "ccc" not in socket.gethostname(),
-    reason="Train consumes too much memory for a Travis run.",
-)
 def test_infer(model_dir: str):
     protein_solubility_infer(
         finetune_output_dir=model_dir,
