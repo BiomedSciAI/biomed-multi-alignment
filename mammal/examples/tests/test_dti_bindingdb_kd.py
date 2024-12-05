@@ -1,3 +1,4 @@
+import socket
 from pathlib import Path
 
 import hydra
@@ -18,6 +19,9 @@ def _clean_hydra() -> None:
 
 @pytest.fixture(scope="session")
 def model_dir(tmp_path_factory: pytest.TempPathFactory) -> str:
+    if "ccc" not in socket.gethostname():
+        pytest.skip("Full tests requires resources")
+
     model_dir_path = tmp_path_factory.mktemp("test_dti_bindingdb_kd") / "test"
     return model_dir_path
 

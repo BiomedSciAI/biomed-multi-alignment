@@ -1,3 +1,6 @@
+[![arXiv](https://img.shields.io/badge/arXiv-2410.22367-b31b1b.svg)](https://arxiv.org/abs/2410.22367)
+[![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg)](https://opensource.org/)
+![PyPI Downloads](https://static.pepy.tech/badge/biomed-multi-alignment)
 
 # biomed-multi-alignment
 
@@ -34,6 +37,13 @@ Follow the next steps to install MAMMAL in a new environment:
    pip install -e ./biomed-multi-alignment[examples]
    ```
 
+   Another option is to install directly from PyPI:
+   ```
+   pip install biomed-multi-alignment[examples]
+   ```
+
+
+
 
 # Examples
 We provide a variety of example tasks, covering one from each domain as well as a multi-domain task. To facilitate easy setup, we've selected tasks with datasets that can be automatically downloaded and come with established data splits.
@@ -42,6 +52,7 @@ While these tasks may not necessarily have State-of-the-Art results we can compa
 Additionally, since the pre-trained model was also trained on a protein-protein interaction task, we demonstrate inference using this task with ibm/biomed.omics.bl.sm.ma-ted-458m.
 
 ## Protein-Protein Interaction
+**This example supported in a [google-colab](https://colab.research.google.com/github/BiomedSciAI/biomed-multi-alignment/blob/main/tutorials/begginer_inference.ipynb)**
 A simple example for a task already supported by `ibm/biomed.omics.bl.sm.ma-ted-458m`:
 ```python
 import torch
