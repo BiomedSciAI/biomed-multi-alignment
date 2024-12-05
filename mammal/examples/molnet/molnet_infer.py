@@ -93,7 +93,7 @@ def task_infer(task_dict: dict, smiles_seq: str) -> dict:
 
     sample_dict = create_sample_dict(task_name, smiles_seq, tokenizer_op, model)
     # Generate Prediction
-    batch_dict = get_batch_dict(model, sample_dict)
+    batch_dict = get_predictions(model, sample_dict)
 
     # Post-process the model's output
     result = process_model_output(
@@ -129,7 +129,7 @@ def create_sample_dict(task_name, smiles_seq, tokenizer_op, model):
     return sample_dict
 
 
-def get_batch_dict(model, sample_dict):
+def get_predictions(model, sample_dict):
     return model.generate(
         [sample_dict],
         output_scores=True,
