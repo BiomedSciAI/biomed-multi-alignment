@@ -126,10 +126,10 @@ class DtiBindingdbKdTask(MammalTask):
         ground_truth_value = sample_dict.get(ground_truth_key, None)
 
         sample_dict[ENCODER_INPUTS_STR] = (
-            f"<@TOKENIZER-TYPE=AA><MASK> \
-              <@TOKENIZER-TYPE=AA@MAX-LEN={target_max_seq_length}><MOLECULAR_ENTITY><MOLECULAR_ENTITY_GENERAL_PROTEIN><SEQUENCE_NATURAL_START>{target_sequence}<SEQUENCE_NATURAL_END> \
-              <@TOKENIZER-TYPE=SMILES@MAX-LEN={drug_max_seq_length}><MOLECULAR_ENTITY><MOLECULAR_ENTITY_SMALL_MOLECULE><SEQUENCE_NATURAL_START>{drug_sequence}<SEQUENCE_NATURAL_END> \
-              <EOS>"
+            "<@TOKENIZER-TYPE=AA><MASK>"
+            f"<@TOKENIZER-TYPE=AA@MAX-LEN={target_max_seq_length}><MOLECULAR_ENTITY><MOLECULAR_ENTITY_GENERAL_PROTEIN><SEQUENCE_NATURAL_START>{target_sequence}<SEQUENCE_NATURAL_END>"
+            f"<@TOKENIZER-TYPE=SMILES@MAX-LEN={drug_max_seq_length}><MOLECULAR_ENTITY><MOLECULAR_ENTITY_SMALL_MOLECULE><SEQUENCE_NATURAL_START>{drug_sequence}<SEQUENCE_NATURAL_END>"
+            "<EOS>"
         )
         tokenizer_op(
             sample_dict,
