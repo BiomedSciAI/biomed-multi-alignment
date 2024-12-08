@@ -39,10 +39,9 @@ def main(tcr_beta_seq: str, epitope_seq: str, device: str):
 
 
 def load_model(
-    device: str, path: str | None = None
+    device: str,
+    path: str = "ibm/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind",  # change to "ibm/biomed.omics.bl.sm.ma-ted-458m" to try on the base model
 ) -> tuple["Mammal", "ModularTokenizerOp"]:
-    if not path:
-        path = "ibm/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind"  # change to "ibm/biomed.omics.bl.sm.ma-ted-458m" to try on the base model
 
     # Load Model and set to evaluation mode
     model = Mammal.from_pretrained(pretrained_model_name_or_path=path)
