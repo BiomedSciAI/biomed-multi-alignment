@@ -145,9 +145,12 @@ def extract_classification_predictions_and_labels(
     :param scores_key: batch_dict key which points to scores
     :param seq_pos: the position of the class token in labels
     """
+    device_labels = batch_dict[labels_key].device
+    device_cls_preds = batch_dict[cls_preds_key].device
+
     labels = batch_dict[labels_key][:, seq_pos].cpu()
     cls_preds = batch_dict[cls_preds_key][:, seq_pos].contiguous().cpu()
-    scores = batch_dict[scores_key][:, seq_pos, class_token_ids].contiguous().cpu()
+    scores = batch_dict[scores_key][:, seq_pos, class_token_ids].contiguous()
 
     classification_labels = labels.apply_(
         lambda x: token_id_to_class_index.get(x, len(class_token_ids))
@@ -155,9 +158,10 @@ def extract_classification_predictions_and_labels(
     classification_cls_preds = cls_preds.apply_(
         lambda x: token_id_to_class_index.get(x, len(class_token_ids))
     )
+
     return {
-        labels_key: classification_labels,
-        cls_preds_key: classification_cls_preds,
+        labels_key: classification_labels.to(device=device_labels),
+        cls_preds_key: classification_cls_preds.to(device=device_cls_preds),
         scores_key: scores,
     }
 
