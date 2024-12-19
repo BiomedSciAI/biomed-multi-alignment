@@ -1,6 +1,8 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2410.22367-b31b1b.svg)](https://arxiv.org/abs/2410.22367)
 [![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg)](https://opensource.org/)
 ![PyPI Downloads](https://static.pepy.tech/badge/biomed-multi-alignment)
+[![GitHub Clones](https://img.shields.io/badge/dynamic/json?color=success&label=Clone&query=count&url=https://gist.githubusercontent.com/mosheraboh/a19913f8cf752e05e84f0d09d997a403/raw/clone.json&logo=github)](https://github.com/MShawon/github-clone-count-badge)
+
 
 # biomed-multi-alignment
 

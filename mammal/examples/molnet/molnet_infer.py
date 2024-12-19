@@ -91,6 +91,21 @@ def task_infer(task_dict: dict, smiles_seq: str) -> dict:
     if task_name not in TASK_NAMES:
         print(f"The {task_name=} is incorrect. Valid names are {TASK_NAMES}")
 
+    sample_dict = create_sample_dict(task_name, smiles_seq, tokenizer_op, model)
+    # Generate Prediction
+    batch_dict = get_predictions(model, sample_dict)
+
+    # Post-process the model's output
+    result = process_model_output(
+        tokenizer_op=tokenizer_op,
+        decoder_output=batch_dict[CLS_PRED][0],
+        decoder_output_scores=batch_dict[SCORES][0],
+    )
+    return result
+
+
+def create_sample_dict(task_name, smiles_seq, tokenizer_op, model):
+
     # Create and load sample
     sample_dict = dict()
     # Formatting prompt to match pre-training syntax
@@ -111,22 +126,16 @@ def task_infer(task_dict: dict, smiles_seq: str) -> dict:
     sample_dict[ENCODER_INPUTS_ATTENTION_MASK] = torch.tensor(
         sample_dict[ENCODER_INPUTS_ATTENTION_MASK], device=model.device
     )
+    return sample_dict
 
-    # Generate Prediction
-    batch_dict = model.generate(
+
+def get_predictions(model, sample_dict):
+    return model.generate(
         [sample_dict],
         output_scores=True,
         return_dict_in_generate=True,
         max_new_tokens=5,
     )
-
-    # Post-process the model's output
-    result = process_model_output(
-        tokenizer_op=tokenizer_op,
-        decoder_output=batch_dict[CLS_PRED][0],
-        decoder_output_scores=batch_dict[SCORES][0],
-    )
-    return result
 
 
 if __name__ == "__main__":
