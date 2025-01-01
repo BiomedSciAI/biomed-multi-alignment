@@ -1,29 +1,8 @@
-"""
-(C) Copyright 2021 IBM Corp.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-Created on June 30, 2021
-
-"""
-
-# from collections.abc import Hashable
-# from typing import Dict, List, Optional, Union
-
 import numpy as np
 from anndata import AnnData
 from fuse.data import OpBase
 from fuse.utils.ndict import NDict
+from keys import SAMPLE_ID
 
 
 class OpReadAnnData(OpBase):
@@ -35,12 +14,13 @@ class OpReadAnnData(OpBase):
     def __init__(
         self,
         data: AnnData | None = None,
-        key_name: str = "data.sample_id",
+        key_name: str = SAMPLE_ID,
         label_column: str = "label",
     ):
         """
         :param data:  input AnnData object
         :param key_name: name of value in sample_dict which will be used as the key/index
+        :param label_column: name of the column which contains the label
         """
         super().__init__()
 
