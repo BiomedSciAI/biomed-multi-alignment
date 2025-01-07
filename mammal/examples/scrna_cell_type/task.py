@@ -147,7 +147,9 @@ class CellTypeTask(MammalTask):
         if label is not None:
             pad_id = tokenizer_op.get_token_id("<PAD>")
             ignore_token_value = -100
-            sample_dict[LABELS_STR] = f"<@TOKENIZER-TYPE=CELL_ATTRIBUTES>[{label}]<EOS>"
+            sample_dict[LABELS_STR] = (
+                f"<@TOKENIZER-TYPE=CELL_ATTRIBUTES><SENTINEL_ID_0>[{label}]<EOS>"
+            )
             tokenizer_op(
                 sample_dict=sample_dict,
                 key_in=LABELS_STR,
@@ -167,8 +169,7 @@ class CellTypeTask(MammalTask):
             ] = ignore_token_value
 
             sample_dict[DECODER_INPUTS_STR] = (
-                # TODO: UPDATE THIS
-                f"<@TOKENIZER-TYPE=SMILES><DECODER_START><SENTINEL_ID_0><{label}><EOS>"
+                f"<@TOKENIZER-TYPE=CELL_ATTRIBUTES><DECODER_START><SENTINEL_ID_0><{label}><EOS>"
             )
             tokenizer_op(
                 sample_dict=sample_dict,

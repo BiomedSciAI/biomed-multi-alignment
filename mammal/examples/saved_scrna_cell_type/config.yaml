@@ -1,7 +1,7 @@
 name: cell_type_finetune
 root: "."
 model_dir: ${root}/${name}
-seed: 2024
+seed: 2025
 
 task:
   _target_: mammal.examples.scrna_cell_type.task.CellTypeTask
@@ -22,6 +22,9 @@ task:
 # tokenizer
 tokenizer:
   tokenizer_path: ibm/mammalian
+#  new_special_tokens:
+#    - "<BINNED_GENEFORMER>"
+
 
 model:
   pretrained_kwargs: # arguments for Mammal.from_pretrained() which triggered only if pretrained_model_name_or_path is not None
@@ -34,6 +37,7 @@ module:
   opt_callable:
     _target_: torch.optim.AdamW
     _partial_: true # should get also parameters
+    # arguments for torch.optim.AdamW()
     lr: 0.00001
 
   lr_sch_callable:
@@ -45,14 +49,16 @@ module:
 
   model_dir: ${model_dir}
   best_epoch_source:
-    monitor: validation.metrics.cell_type_acc # see metrics.py:classification_metrics
+    monitor: validation.metrics.cell_type_acc # ??? see metrics.py:classification_metrics
     mode: max
 
+# train
 trainer:
+  # arguments for pytorch_lightning.Trainer()
   max_epochs: 100
   default_root_dir: ${model_dir}
   num_sanity_val_steps: 0
-  val_check_interval: 0.1
+#  val_check_interval: 0.1
 
 
 # experiment tracker
@@ -64,10 +70,10 @@ track_clearml: # arguments for fuse.dl.lightning.pl_funcs.start_clearml_logger
   continue_last_task: False
   offline_mode: False
 
+evaluate : false #if true then it will use lightning's validate on the test dataloader
+
 hydra:
   run:
     dir: ${model_dir}
   job:
     chdir: False
-
-evaluate : false #if true then it will use lightning's validate on the test dataloader

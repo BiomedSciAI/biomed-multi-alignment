@@ -62,8 +62,8 @@ class CellTypeDataModule(pl.LightningDataModule):
         self.ds_dict: dict[str, Any] = {}
         self.stratify_by = stratify_by
         self.skip_keys = [
-            "gene_names",
-            "tmp.scrna",
+            "scrna.gene_names",
+            "scrna.scrna",
         ]
 
     def setup(self, stage: str) -> None:
@@ -76,7 +76,7 @@ class CellTypeDataModule(pl.LightningDataModule):
                 # Prepare the input string(s) in modular tokenizer input format
                 self.data_preprocessing,
                 dict(
-                    sequence_key="tmp.scrna",
+                    sequence_key="scrna.scrna",
                     label_key="data.label",
                     tokenizer_op=self.tokenizer_op,
                     input_max_seq_length=self.input_max_seq_length,
@@ -251,5 +251,6 @@ def preprocess_ann_data(anndata_object: anndata.AnnData):
 
 if __name__ == "__main__":
     ds_dict = load_datasets("data/Zheng68k_filtered.h5ad", stratify_by=["label"])
-    print(ds_dict["train"][0])
+    t0 = ds_dict["train"][0]
+    print(t0)
     print(ds_dict["test"][0])

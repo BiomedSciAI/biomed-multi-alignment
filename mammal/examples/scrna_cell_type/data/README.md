@@ -26,10 +26,10 @@ it needs to be loaded into an anndata and save to this directory
 
 
 * Normelize the sum of counts for each cell to a constant (1000)
-        
+
         scanpy.pp.normalize_total(anndata_object,1000.)
 
-        
+
 * Move to log space (note,the data prior to this step will be in the range 0-10 so scanpy may issue a warning that the data has allready beed log-scaled)
 
         scanpy.pp.log1p(anndata_object,base=2)
@@ -41,4 +41,3 @@ it needs to be loaded into an anndata and save to this directory
         anndata_object.X.data=np.digitize(anndata_object.X.data, bins)
 
     Note that this was done over all the data, but that is not likely to cause any bleeding from the test sets
-
