@@ -9,11 +9,12 @@ import torch
 import transformers
 from fuse.data.utils.collates import CollateDefault
 from fuse.dl.models.heads.common import ClassifierMLP
-from huggingface_hub import ModelHubMixin, snapshot_download
+from huggingface_hub import snapshot_download
 from huggingface_hub.constants import CONFIG_NAME, SAFETENSORS_SINGLE_FILE
 from omegaconf import DictConfig, OmegaConf
 from safetensors.torch import load_model, save_model
 from transformers import PretrainedConfig, T5Config, T5ForConditionalGeneration
+from transformers.modeling_utils import PreTrainedModel
 
 from mammal.keys import *  # noqa
 from mammal.lora import get_lora_model
@@ -120,7 +121,7 @@ class MammalConfig(PretrainedConfig):
                 setattr(self, key, value)
 
 
-class Mammal(ModelHubMixin, torch.nn.Module):
+class Mammal(PreTrainedModel):
     VERSION = "0.0"
 
     def __init__(
@@ -130,8 +131,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         """
         Create a Model without loading weights
         """
-        super().__init__()
-        self.config = config
+        super().__init__(config)
         self.t5_model = T5ForConditionalGeneration(config=self.config.t5_config)
 
         if getattr(self.config, "support_input_scalars", False):
@@ -383,7 +383,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         cls,
         pretrained_model_name_or_path: str | Path,
         *,
-        allow_config_mismatch: bool = False,
+        allow_config_mismatch: bool = True,
         config: MammalConfig | str | os.PathLike | None = None,
         config_overrides: dict[str, Any] | None = None,
         strict: bool = True,
