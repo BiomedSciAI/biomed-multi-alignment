@@ -11,9 +11,9 @@ task:
     batch_size: 20
     # tokenizer_op is provided later, dymanicly
     train_dl_kwargs: # Dataloader constructor parameters
-      num_workers: 0
+      num_workers: 8
     valid_dl_kwargs: # Dataloader constructor parameters
-      num_workers: 0
+      num_workers: 8
     # data_preprocessing is provided later, dymanicly
     input_max_seq_length: 500
     encoder_input_max_seq_len: 512
