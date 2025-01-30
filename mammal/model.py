@@ -478,6 +478,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                     )
 
                 state_dict = pl_ckpt_dict["state_dict"]
+
                 lightning_model_prefix = "_model."
                 state_dict = {
                     (
@@ -487,6 +488,12 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                     ): value
                     for key, value in state_dict.items()
                 }
+
+                pretrained_has_lora_weights = has_lora_weights(state_dict=state_dict)
+                if config.use_lora and pretrained_has_lora_weights:
+                    # Prepare model for LoRA's state dict
+                    model.t5_model = get_lora_model(model.t5_model)
+
                 # Inject weights to model instance
                 model.load_state_dict(state_dict, strict=strict)
 
@@ -540,3 +547,10 @@ def get_encoder_mlp_head(
         dropout_rate=dropout,
         num_classes=num_classes,
     )
+
+
+def has_lora_weights(state_dict: dict[str, Any]) -> bool:
+    """
+    Checks if the given state_dict contains LoRA weights.
+    """
+    return any("lora" in w for w in state_dict.keys())

@@ -46,10 +46,6 @@ def get_lora_model(
             pattern is not in the common layers pattern.
     """
 
-    # freeze all parameters in model:
-    for param in model.parameters():
-        param.requires_grad = False
-
     # build lora config
     config = LoraConfig(
         peft_type=peft_type,
