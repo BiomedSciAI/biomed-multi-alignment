@@ -1,7 +1,6 @@
 import copy
 import json
 import os
-import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -13,7 +12,7 @@ from fuse.dl.models.heads.common import ClassifierMLP
 from huggingface_hub import ModelHubMixin, snapshot_download
 from huggingface_hub.constants import CONFIG_NAME, SAFETENSORS_SINGLE_FILE
 from omegaconf import DictConfig, OmegaConf
-from safetensors.torch import load_model, save_model
+from safetensors.torch import load_file, load_model, save_model
 from transformers import PretrainedConfig, T5Config, T5ForConditionalGeneration
 
 from mammal.keys import *  # noqa
@@ -463,8 +462,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
             # override configuration if requested
             if config_overrides is not None:
                 config.override(config_overrides)
-
-            model = initialize_model(cls, config=config)
+            model = cls(config)
 
             if hasattr(config, "random_weights") and config.random_weights:
                 print(
@@ -493,10 +491,12 @@ class Mammal(ModelHubMixin, torch.nn.Module):
 
                 pretrained_has_lora_weights = has_lora_weights(state_dict=state_dict)
                 if pretrained_has_lora_weights and not config.use_lora:
-                    warnings.warn(
-                        "LoRA weights found in state_dict, but 'config.use_lora' is False.",
-                        UserWarning,
+                    raise ValueError(
+                        "LoRA weights found in state_dict, but 'config.use_lora' is False."
                     )
+
+                if config.use_lora:
+                    model.t5_model = get_lora_model(model.t5_model)
 
                 # Inject weights to model instance
                 model.load_state_dict(state_dict, strict=strict)
@@ -516,11 +516,22 @@ class Mammal(ModelHubMixin, torch.nn.Module):
             if config_overrides is not None:
                 config.override(config_overrides)
 
-            model = initialize_model(cls, config=config)
+            model = cls(config)
 
             model_safetensors_path = os.path.join(
                 pretrained_model_name_or_path, SAFETENSORS_SINGLE_FILE
             )
+
+            state_dict = load_file(model_safetensors_path)
+            pretrained_has_lora_weights = has_lora_weights(state_dict=state_dict)
+            if pretrained_has_lora_weights and not config.use_lora:
+                raise ValueError(
+                    "LoRA weights found in state_dict, but 'config.use_lora' is False."
+                )
+
+            if config.use_lora:
+                model.t5_model = get_lora_model(model.t5_model)
+
             if hasattr(config, "random_weights") and config.random_weights:
                 print(
                     "Warning! You are using random weights! To disable it, make sure to config 'random_weights' to False."
@@ -554,10 +565,3 @@ def has_lora_weights(state_dict: dict[str, Any]) -> bool:
     Checks if the given state_dict contains LoRA weights.
     """
     return any("lora" in w for w in state_dict.keys())
-
-
-def initialize_model(model_cls, config):
-    model = model_cls(config)
-    if config.use_lora:
-        model.t5_model = get_lora_model(model.t5_model)
-    return model
