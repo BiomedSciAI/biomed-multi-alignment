@@ -495,11 +495,14 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                         "LoRA weights found in state_dict, but 'config.use_lora' is False."
                     )
 
-                if config.use_lora:
+                if config.use_lora and pretrained_has_lora_weights:
                     model.t5_model = get_lora_model(model.t5_model)
 
                 # Inject weights to model instance
                 model.load_state_dict(state_dict, strict=strict)
+
+                if config.use_lora and not pretrained_has_lora_weights:
+                    model.t5_model = get_lora_model(model.t5_model)
 
         elif os.path.isdir(pretrained_model_name_or_path):
             print(
@@ -529,7 +532,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                     "LoRA weights found in state_dict, but 'config.use_lora' is False."
                 )
 
-            if config.use_lora:
+            if config.use_lora and pretrained_has_lora_weights:
                 model.t5_model = get_lora_model(model.t5_model)
 
             if hasattr(config, "random_weights") and config.random_weights:
@@ -539,6 +542,9 @@ class Mammal(ModelHubMixin, torch.nn.Module):
             else:
                 # Inject weights to model instance
                 load_model(model, model_safetensors_path, strict=strict)
+
+            if config.use_lora and not pretrained_has_lora_weights:
+                model.t5_model = get_lora_model(model.t5_model)
 
         else:
             raise ValueError()
