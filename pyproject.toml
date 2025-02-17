@@ -31,7 +31,8 @@ dependencies = [
 
 [project.optional-dependencies]
 examples = [
-  "PyTDC"
+  "PyTDC",
+  "anndata",
 ]
 
 [project.urls]
