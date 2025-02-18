@@ -1,21 +1,35 @@
 # Data for Cell Type identification from scRNA data
 This example follows [Zheng]() for identification of white blood cell types from single cell RNA expression data.
 
-data is assumed to be in anndata format with the cell types asa labels.
 
-<!-- ## Obtaining the raw data:
-The main data is availble online, for example in the [10x]() cite.  The lables are based on the data in[LINK]() -->
+## Outline of process
+The finetune process requrires the input data to be in AnnDatam (h5ad) format with the cell types
+as labels. If the data is not packed as AnnData, as is the case when downloading from the
+10xgenomics site as explained below, it need to first be packed into one and saved to the disk.
+
+
+
+
+
+
+## Obtaining the raw data:
+The main data is availble online, for example in the [10xgenomics](https://www.10xgenomics.com/) cite.  The lables are based on the data in [LINK](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0)
+
+From this download the file `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz` and place it in this directory.  Unzip it.  You should now have a directoy called `filtered_matrices_mex/hg19`
+
+
 
 
 
 ## Packing the data into an h5ad (anndata) file
 If the original data comes in a several files
-* Cell by gene expression count matrix
+* Cell by gene expression count matrix (Gene/cell matrix)
 * Cell identifires to row mapping
 * Gene identifires to column mapping
 * Cell type by cell identification maping.
 
-it needs to be loaded into an anndata and save to this directory
+The raw data needs to be loaded into an anndata and saved to this (examples/scrna_cell_type/data) directory.
+
 
 ## data transformations
 

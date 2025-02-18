@@ -48,11 +48,13 @@ module:
     monitor: validation.metrics.cell_type_acc # see metrics.py:classification_metrics
     mode: max
 
+# train
 trainer:
+  # arguments for pytorch_lightning.Trainer()
   max_epochs: 100
   default_root_dir: ${model_dir}
   num_sanity_val_steps: 0
-  val_check_interval: 0.1
+#  val_check_interval: 0.1
 
 
 # experiment tracker
@@ -64,10 +66,10 @@ track_clearml: # arguments for fuse.dl.lightning.pl_funcs.start_clearml_logger
   continue_last_task: False
   offline_mode: False
 
+evaluate : false #if true then it will use lightning's validate on the test dataloader
+
 hydra:
   run:
     dir: ${model_dir}
   job:
     chdir: False
-
-evaluate : false #if true then it will use lightning's validate on the test dataloader

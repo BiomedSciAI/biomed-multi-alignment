@@ -169,48 +169,48 @@ def extract_classification_predictions_and_labels(
 def regression_metrics(
     name: str,
     pred_scalars_key: str = SCALARS_PREDICTION_HEAD_LOGITS,
-    target_scalers_key: str = LABELS_SCALARS_VALUES,
+    target_scalars_key: str = LABELS_SCALARS_VALUES,
     process_func: Callable | None = None,
 ) -> dict[str, MetricBase]:
     """
     Typical metrics for regression tasks: includes MetricPearsonCorrelation, MetricSpearmanCorrelation, MetricMAE, MetricMSE, MetricRMSE, MetricR2
     :param pred_scalars_key: key to scalar prediction (after it was extracted from model output)
-    :param target_scalers_key: key to ground truth scalar.
+    :param target_scalars_key: key to ground truth scalar.
     :param process_func: a function that extract the actual relevant scalar from model output and store it in batch_dict.
     """
     metrics = {}
     metrics[f"{name}_pcorr"] = MetricPearsonCorrelation(
         pred=pred_scalars_key,
-        target=target_scalers_key,
+        target=target_scalars_key,
         batch_pre_collect_process_func=process_func,
         mask=None,
     )
     metrics[f"{name}_spearcorr"] = MetricSpearmanCorrelation(
         pred=pred_scalars_key,
-        target=target_scalers_key,
+        target=target_scalars_key,
         batch_pre_collect_process_func=process_func,
         mask=None,
     )
     metrics[f"{name}_mae"] = MetricMAE(
         pred=pred_scalars_key,
-        target=target_scalers_key,
+        target=target_scalars_key,
         batch_pre_collect_process_func=process_func,
     )
     metrics[f"{name}_mse"] = MetricMSE(
         pred=pred_scalars_key,
-        target=target_scalers_key,
+        target=target_scalars_key,
         batch_pre_collect_process_func=process_func,
     )
 
     metrics[f"{name}_rmse"] = MetricRMSE(
         pred=pred_scalars_key,
-        target=target_scalers_key,
+        target=target_scalars_key,
         batch_pre_collect_process_func=process_func,
     )
 
     metrics[f"{name}_r2"] = MetricR2(
         pred=pred_scalars_key,
-        target=target_scalers_key,
+        target=target_scalars_key,
         batch_pre_collect_process_func=process_func,
     )
 
