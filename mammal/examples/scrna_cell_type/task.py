@@ -121,6 +121,12 @@ class CellTypeTask(MammalTask):
         # scrna.indices[np.argsort(-scrna.data)]
         # ]
 
+        # This is where the data is converted to GeneFormer inspired "binned and sorted"
+        # The binning is done in preprocess_ann_data, on load rather then when training.
+        # The sorting is done first over the binned expression values and then on the gene names
+        # This is achived by zipping together the minus the bin (so to sort it from large to small)
+        # and the standertized gene name.
+
         sorted_genes = [
             a[1] for a in sorted(zip(-scrna.data, gene_names[scrna.indices]))
         ]
@@ -195,10 +201,6 @@ class CellTypeTask(MammalTask):
     ) -> dict | None:
         ans = None
         all_class_label_ids = tokenizer_op.get_token_id(ALL_CLASS_LABELS)
-        # label_id_to_int = {
-        #     negative_token_id: 0,
-        #     positive_token_id: 1,
-        # }
         classification_position = 1
         if decoder_output_scores is not None:
             class_scores = decoder_output_scores[classification_position][
@@ -225,6 +227,8 @@ def load_cell_type_mapping(
     """
     Load metadata_extra_mapping.csv from the given dataset metadata folder,
     and return the values of a requested key and value columns as a dictionary.
+    This is used to convert the names from the ones in the input anndata to the
+    ones that are known to the tokenizer.
     """
     cell_type_mapping_file_path = Path(__file__).parent / "cell_type_mapping.csv"
 
