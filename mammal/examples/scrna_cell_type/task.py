@@ -111,18 +111,13 @@ class CellTypeTask(MammalTask):
         label = sample_dict.get(label_key, None)
 
         gene_names = scrna._view_args.parent.var_names.to_numpy()
-        # sorted_values = np.argsort((-scrna).toarray()).squeeze()
-        # scrna.data are the non-zero values of the raw, scrna.indices are the indexes for these values
-        # scrna._view_args.parent is the anndata object this row comes from
-        # sorted_genes = scrna._view_args.parent.var_names[
-        # scrna.indices[np.argsort(-scrna.data)]
-        # ]
 
         # This is where the data is converted to GeneFormer inspired "binned and sorted"
         # The binning is done in preprocess_ann_data, on load rather then when training.
         # The sorting is done first over the binned expression values and then on the gene names
         # This is achived by zipping together the minus the bin (so to sort it from large to small)
         # and the standertized gene name.
+        # scrna.data are the non-zero values of the raw, scrna.indices are the indexes for these values
 
         sorted_genes = [
             a[1] for a in sorted(zip(-scrna.data, gene_names[scrna.indices]))
