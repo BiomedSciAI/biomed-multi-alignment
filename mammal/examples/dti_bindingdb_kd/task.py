@@ -78,7 +78,7 @@ class DtiBindingdbKdTask(MammalTask):
                     norm_y_std=self.norm_y_std,
                 ),
                 pred_scalars_key="model.out.dti_bindingdb_kd",
-                target_scalers_key="Y",
+                target_scalars_key="Y",
             )
         )
 
@@ -95,7 +95,7 @@ class DtiBindingdbKdTask(MammalTask):
                     norm_y_std=self.norm_y_std,
                 ),
                 pred_scalars_key="model.out.dti_bindingdb_kd",
-                target_scalers_key="Y",
+                target_scalars_key="Y",
             )
         )
         return validation_metrics
