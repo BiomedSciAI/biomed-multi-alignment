@@ -217,7 +217,12 @@ def load_cell_type_mapping(
         return cell_type_mapping
 
 
-def preprocess_ann_data(anndata_object: anndata.AnnData):
+def preprocess_ann_data(
+    anndata_object: anndata.AnnData,
+    min_genes: int = 200,
+    normalize_total: float = 1000,
+    num_bins: int = 11,
+):
     """run preprocessing steps on anndata object
     assumes that the anndata object has a standard structure with counts per cell X gene, and cell type annotations in obs["celltype"].
 
@@ -238,12 +243,14 @@ def preprocess_ann_data(anndata_object: anndata.AnnData):
         cell_type_mapper[cell] for cell in anndata_object.obs["celltype"]
     ]
 
-    sc.pp.filter_cells(anndata_object, min_genes=200)
-    sc.pp.normalize_total(anndata_object, target_sum=1000.0)
+    sc.pp.filter_cells(anndata_object, min_genes=min_genes)
+    sc.pp.normalize_total(anndata_object, target_sum=normalize_total)
     sc.pp.log1p(anndata_object, base=2)
 
     # split range to bins - more or less 0,2,3,..10
-    bins = np.linspace(anndata_object.X.data.min(), anndata_object.X.max(), num=10)
+    bins = np.linspace(
+        anndata_object.X.data.min(), anndata_object.X.max(), num=num_bins
+    )
     anndata_object.X.data = np.digitize(anndata_object.X.data, bins)
 
     return anndata_object

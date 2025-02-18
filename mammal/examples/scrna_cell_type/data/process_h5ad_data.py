@@ -1,7 +1,7 @@
 import anndata
 import click
-import numpy as np
-import scanpy as sc
+
+from mammal.examples.scrna_cell_type.pl_data_module import preprocess_ann_data
 
 
 @click.command()
@@ -48,20 +48,12 @@ def main(
 
     anndata_object = anndata.read_h5ad(input_h5ad_file)
     # process the data - filter out cells with shallow reads, normelize depth and change to log scale of about 0-10 (log_2(1001)~=10)
-
-    sc.pp.filter_cells(anndata_object, min_genes=min_genes)
-    sc.pp.normalize_total(adata=anndata_object, target_sum=normalize_total)
-    sc.pp.log1p(anndata_object, base=2)
-
-    # split range to bins - more or less 0,2,3,..10
-    bins = np.linspace(
-        anndata_object.X.data.min(), anndata_object.X.max(), num=num_bins
+    preprocess_ann_data(
+        anndata_object=anndata_object,
+        min_genes=min_genes,
+        normalize_total=normalize_total,
+        num_bins=num_bins,
     )
-    print(f"location of bin ends: {bins}")
-
-    # convert the counts to bins
-    anndata_object.X.data = np.digitize(anndata_object.X.data, bins)
-
     # Save result anndata object to disk
     anndata_object.write_h5ad(output_h5ad_file)
 
