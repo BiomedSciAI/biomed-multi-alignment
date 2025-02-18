@@ -199,6 +199,9 @@ def load_cell_type_mapping(
     """
     Load metadata_extra_mapping.csv from the given dataset metadata folder,
     and return the values of a requested key and value columns as a dictionary.
+
+    This is used to convert the names from the ones in the input anndata to the
+    ones that are known to the tokenizer.
     """
     cell_type_mapping_file_path = Path(__file__).parent / "cell_type_mapping.csv"
 

@@ -1,9 +1,6 @@
-import os
-from pathlib import Path
 from typing import Any
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
@@ -219,29 +216,3 @@ class CellTypeTask(MammalTask):
             )
 
         return ans
-
-
-def load_cell_type_mapping(
-    mapping_key="celltype", mapping_value="cell_type_ontology_term_id"
-):
-    """
-    Load metadata_extra_mapping.csv from the given dataset metadata folder,
-    and return the values of a requested key and value columns as a dictionary.
-    This is used to convert the names from the ones in the input anndata to the
-    ones that are known to the tokenizer.
-    """
-    cell_type_mapping_file_path = Path(__file__).parent / "cell_type_mapping.csv"
-
-    #    this is new
-    print(cell_type_mapping_file_path)
-    if not os.path.exists(cell_type_mapping_file_path):
-        raise FileNotFoundError(str(cell_type_mapping_file_path) + "is not found")
-    else:
-        mapping_df = pd.read_csv(cell_type_mapping_file_path, index_col=False)
-        cell_type_mapping = dict(
-            zip(
-                mapping_df[mapping_key],
-                mapping_df[mapping_value],
-            )
-        )
-        return cell_type_mapping
