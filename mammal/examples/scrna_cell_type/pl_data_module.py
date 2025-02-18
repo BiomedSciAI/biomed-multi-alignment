@@ -221,7 +221,7 @@ def preprocess_ann_data(
     anndata_object: anndata.AnnData,
     min_genes: int = 200,
     normalize_total: float = 1000,
-    num_bins: int = 11,
+    num_bins: int = 10,
 ):
     """run preprocessing steps on anndata object
     assumes that the anndata object has a standard structure with counts per cell X gene, and cell type annotations in obs["celltype"].
@@ -248,8 +248,9 @@ def preprocess_ann_data(
     sc.pp.log1p(anndata_object, base=2)
 
     # split range to bins - more or less 0,2,3,..10
+    # the +1 is intended to create num_bin bins, as linespace creates the bin ends starting at the lowest and ending at the highest values.
     bins = np.linspace(
-        anndata_object.X.data.min(), anndata_object.X.max(), num=num_bins
+        anndata_object.X.data.min(), anndata_object.X.max(), num=num_bins + 1
     )
     anndata_object.X.data = np.digitize(anndata_object.X.data, bins)
 

@@ -36,14 +36,14 @@ from mammal.examples.scrna_cell_type.pl_data_module import preprocess_ann_data
     "-b",
     type=click.INT,
     help="number of expression bins to use",
-    default=11,
+    default=10,
 )
 def main(
     input_h5ad_file: str,
     output_h5ad_file: str,
     min_genes: int = 200,
     normalize_total: float = 1000,
-    num_bins: int = 11,
+    num_bins: int = 10,
 ):
 
     anndata_object = anndata.read_h5ad(input_h5ad_file)
