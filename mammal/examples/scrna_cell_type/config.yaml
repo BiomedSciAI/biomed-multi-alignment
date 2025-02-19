@@ -7,7 +7,7 @@ task:
   _target_: mammal.examples.scrna_cell_type.task.CellTypeTask
   _partial_: True
   data_module_kwargs:
-    data_path: "data/Zheng68k_filtered.h5ad" #  this should be absolute or relative to the directory with the example code
+    data_path: "data/Zheng_68k.h5ad" #  this should be absolute or relative to the directory with the example code
     batch_size: 20
     # tokenizer_op is provided later, dymanicly
     train_dl_kwargs: # Dataloader constructor parameters
