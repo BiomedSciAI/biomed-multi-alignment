@@ -107,9 +107,44 @@ class CellTypeTask(MammalTask):
         labels_max_seq_len: int | None = 4,
         tokenizer_op: ModularTokenizerOp,
     ) -> dict:
+        """process a sample into the format expected by the model
+
+        Args:
+            sample_dict (dict): dictonary with the sample data
+            sequence_key (str): key in the dictionary with the sequence
+            tokenizer_op (ModularTokenizerOp): the tokenizer
+            label_key (int | None, optional): key for the lable. Defaults to None.
+            input_max_seq_length (int | None, optional): sequance is trancated if longer than this. Defaults to 1260.
+            encoder_input_max_seq_len (int | None, optional): maximal length of encoder input. Defaults to 1260.
+            labels_max_seq_len (int | None, optional): maximal length of lable sequance. Defaults to 4.
+
+        Returns:
+            dict: the sample dict with added keys and values:
+
+        Mammal model expects a dictionary with a set of keys to be able to run.  This method converts the data into the expected format.
+        Here is a list of the required fields for an encoder-decoder task:
+            ENCODER_INPUTS_STR
+            ENCODER_INPUTS_TOKENS
+            ENCODER_INPUTS_ATTENTION_MASK
+
+            LABELS_STR
+            LABELS_TOKENS
+            LABELS_ATTENTION_MASK
+
+            DECODER_INPUTS_STR
+            DECODER_INPUTS_TOKENS
+            DECODER_INPUTS_ATTENTION_MASK
+
+            see MammalTask.data_module for more information about these keys and their use.
+
+
+        The three *_str values are constricted here, and then the others are derived from them by the tokenizer_op
+        """
         scrna = sample_dict[sequence_key]
         label = sample_dict.get(label_key, None)
 
+        # we have a link to the data of the specific cell, as a refrence into the anndata objerct
+        # To get the canonical gene names we need to get access to the anndata object itself.
         gene_names = scrna._view_args.parent.var_names.to_numpy()
 
         # This is where the data is converted to GeneFormer inspired "binned and sorted"
