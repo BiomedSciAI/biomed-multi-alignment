@@ -56,6 +56,7 @@ def main(
     )
     # Save result anndata object to disk
     anndata_object.write_h5ad(output_h5ad_file)
+    print(f"processed AnnData file saved to {output_h5ad_file}")
 
 
 if __name__ == "__main__":
