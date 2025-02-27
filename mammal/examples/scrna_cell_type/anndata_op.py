@@ -45,7 +45,7 @@ class OpReadAnnData(OpBase):
 
         # locate the required item
         sample_dict[f"{prefix}.scrna"] = self._data[key, :].X
-        sample_dict["data.label"] = self._data.obs.iloc[key][self.label_column]
+        sample_dict["data.label"] = self._data.obs.iloc[key].get(self.label_column)
         sample_dict[f"{prefix}.gene_names"] = self.gene_names
 
         return sample_dict

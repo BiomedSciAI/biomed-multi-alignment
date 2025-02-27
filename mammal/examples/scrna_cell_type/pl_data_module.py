@@ -21,6 +21,11 @@ from .anndata_op import OpReadAnnData
 
 
 class CellTypeDataModule(pl.LightningDataModule):
+    skip_keys = [
+        "scrna.gene_names",
+        "scrna.scrna",
+    ]
+
     def __init__(
         self,
         *,
@@ -61,10 +66,6 @@ class CellTypeDataModule(pl.LightningDataModule):
         self.pad_token_id = self.tokenizer_op.get_token_id("<PAD>")
         self.ds_dict: dict[str, Any] = {}
         self.stratify_by = stratify_by
-        self.skip_keys = [
-            "scrna.gene_names",
-            "scrna.scrna",
-        ]
 
     def setup(self, stage: str) -> None:
         self.ds_dict = load_datasets(
@@ -158,7 +159,8 @@ def load_datasets(
         data_path = Path(__file__).parent / data_path
     # read files
     anndata_object = anndata.read_h5ad(data_path)
-    preprocess_ann_data(anndata_object)
+    # Without this the anndata on file is assumed to be post preprocessing.
+    # preprocess_ann_data(anndata_object)
     anndata_dict = {}
     anndata_dict["all_data"] = anndata_object
     anndata_dict["all_train"], anndata_dict["test"] = anndata_train_test_split(

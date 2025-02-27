@@ -141,7 +141,10 @@ class CellTypeTask(MammalTask):
         The three *_str values are constricted here, and then the others are derived from them by the tokenizer_op
         """
         scrna = sample_dict[sequence_key]
-        label = sample_dict.get(label_key, None)
+        if label_key:
+            label = sample_dict.get(label_key, None)
+        else:
+            label = None
 
         # we have a link to the data of the specific cell, as a refrence into the anndata objerct
         # To get the canonical gene names we need to get access to the anndata object itself.
@@ -227,7 +230,9 @@ class CellTypeTask(MammalTask):
         decoder_output_scores: np.ndarray,
     ) -> dict | None:
         ans = None
-        all_class_label_ids = tokenizer_op.get_token_id(ALL_CLASS_LABELS)
+        all_class_label_ids = [
+            tokenizer_op.get_token_id(class_label) for class_label in ALL_CLASS_LABELS
+        ]
         classification_position = 1
         if decoder_output_scores is not None:
             class_scores = decoder_output_scores[classification_position][
@@ -239,10 +244,11 @@ class CellTypeTask(MammalTask):
             normalized_score = non_normelized_score / (
                 normalization_factor + 1e-30
             )  # incase non seem to match
-            ans = dict(
-                pred=all_class_label_ids[best_match],
-                not_normalized_scores=non_normelized_score,
-                normalized_scores=normalized_score,
-            )
+            ans = {
+                "cell_type": ALL_CLASS_LABELS[best_match],
+                "pred": all_class_label_ids[best_match],
+                "not_normalized_scores": non_normelized_score,
+                "normalized_scores": normalized_score,
+            }
 
         return ans
