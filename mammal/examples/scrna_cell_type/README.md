@@ -1,3 +1,10 @@
+# scRNA based cell type classification using MAMMAL
+This directory contains code to finetune a MAMMAL model, as is available on [hugging face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m)
+ and evaluate
+
+
+
+
 #  TODO: write readme with information on the task and the prompt building
 
 
