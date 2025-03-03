@@ -110,13 +110,13 @@ class CellTypeTask(MammalTask):
         """process a sample into the format expected by the model
 
         Args:
-            sample_dict (dict): dictonary with the sample data
+            sample_dict (dict): dictionary with the sample data
             sequence_key (str): key in the dictionary with the sequence
             tokenizer_op (ModularTokenizerOp): the tokenizer
-            label_key (int | None, optional): key for the lable. Defaults to None.
-            input_max_seq_length (int | None, optional): sequance is trancated if longer than this. Defaults to 1260.
+            label_key (int | None, optional): key for the label. Defaults to None.
+            input_max_seq_length (int | None, optional): sequence is truncated if longer than this. Defaults to 1260.
             encoder_input_max_seq_len (int | None, optional): maximal length of encoder input. Defaults to 1260.
-            labels_max_seq_len (int | None, optional): maximal length of lable sequance. Defaults to 4.
+            labels_max_seq_len (int | None, optional): maximal length of label sequence. Defaults to 4.
 
         Returns:
             dict: the sample dict with added keys and values:
@@ -146,15 +146,15 @@ class CellTypeTask(MammalTask):
         else:
             label = None
 
-        # we have a link to the data of the specific cell, as a refrence into the anndata objerct
-        # To get the canonical gene names we need to get access to the anndata object itself.
+        # we have a link to the data of the specific cell, as a reference into the AnnData object
+        # To get the canonical gene names we need to get access to the AnnData object itself.
         gene_names = scrna._view_args.parent.var_names.to_numpy()
 
         # This is where the data is converted to GeneFormer inspired "binned and sorted"
         # The binning is done in preprocess_ann_data, on load rather then when training.
         # The sorting is done first over the binned expression values and then on the gene names
-        # This is achived by zipping together the minus the bin (so to sort it from large to small)
-        # and the standertized gene name.
+        # This is achieved by zipping together the minus the bin (so to sort it from large to small)
+        # and the standardized gene name.
         # scrna.data are the non-zero values of the raw, scrna.indices are the indexes for these values
 
         sorted_genes = [
@@ -239,15 +239,15 @@ class CellTypeTask(MammalTask):
                 all_class_label_ids
             ]
             best_match = class_scores.argmax()
-            non_normelized_score = class_scores[best_match]
+            non_normalized_score = class_scores[best_match]
             normalization_factor = class_scores.sum()
-            normalized_score = non_normelized_score / (
+            normalized_score = non_normalized_score / (
                 normalization_factor + 1e-30
             )  # incase non seem to match
             ans = {
                 "cell_type": ALL_CLASS_LABELS[best_match],
                 "pred": all_class_label_ids[best_match],
-                "not_normalized_scores": non_normelized_score,
+                "not_normalized_scores": non_normalized_score,
                 "normalized_scores": normalized_score,
             }
 
