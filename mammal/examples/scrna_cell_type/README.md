@@ -2,12 +2,12 @@
 This directory contains code to fine-tune a MAMMAL model, as is available on [hugging face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m)
 and to predict the cell type using the fine-tuned model
 
-
-    Step one, get the data: run the notebook x (I would prefer a script ).
+<!--
+    Step one, get the data: run the notebook.
     Step two, modify the data set
     Step three, run this example by..
 
-
+ -->
 
 ##  Description
 ### Input for fine-tune:

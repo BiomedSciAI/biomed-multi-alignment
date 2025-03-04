@@ -21,11 +21,11 @@ task:
 
 # tokenizer
 tokenizer:
-  tokenizer_path: ibm/mammalian
+  tokenizer_path: ibm-research/biomed.omics.bl.sm.ma-ted-458m
 
 model:
   pretrained_kwargs: # arguments for Mammal.from_pretrained() which triggered only if pretrained_model_name_or_path is not None
-    pretrained_model_name_or_path: ibm/mammalian
+    pretrained_model_name_or_path: ibm-research/biomed.omics.bl.sm.ma-ted-458m
     # config_overrides:
       # use_lora: True
 
