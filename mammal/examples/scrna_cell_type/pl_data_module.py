@@ -233,7 +233,6 @@ def preprocess_ann_data(
 
     steps include:
         - translate cell types to ontology term ids
-        # - filter out cells that are not in the ontology (???)
         - filter out cells with less than 200 genes expressed
         - normalize expression data sum to 1000
         - transform counts via log1p in base 2
@@ -244,19 +243,29 @@ def preprocess_ann_data(
     """
     cell_type_mapper = load_cell_type_mapping()
 
+    # place labels (cell types) in the "label" observations
     anndata_object.obs["label"] = [
         cell_type_mapper[cell] for cell in anndata_object.obs["celltype"]
     ]
 
+    # process the data:
+
+    # filter out cells with shallow reads
     sc.pp.filter_cells(anndata_object, min_genes=min_genes)
+    # normalize depth and
     sc.pp.normalize_total(anndata_object, target_sum=normalize_total)
+    # change to log1p space, which is approximately in the scale of 0 to 10 (log_2(1001)~=10)
     sc.pp.log1p(anndata_object, base=2)
 
-    # split range to bins - more or less 0,2,3,..10
-    # the +1 is intended to create num_bin bins, as linespace creates the bin ends starting at the lowest and ending at the highest values.
+    # split range to bins - more or less 0,2,3,..10 if using about  10 bins
+    # the +1 is intended to create num_bin bins, as `linespace` creates the bin ends starting at the lowest and ending at the highest values.
+
+    # find bin ends
     bins = np.linspace(
         anndata_object.X.data.min(), anndata_object.X.max(), num=num_bins + 1
     )
+
+    # convert the counts to bins
     anndata_object.X.data = np.digitize(anndata_object.X.data, bins)
 
     return anndata_object

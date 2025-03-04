@@ -152,14 +152,10 @@ class CellTypeTask(MammalTask):
 
         # This is where the data is converted to GeneFormer inspired "binned and sorted"
         # The binning is done in preprocess_ann_data, on load rather then when training.
-        # The sorting is done first over the binned expression values and then on the gene names
-        # This is achieved by zipping together the minus the bin (so to sort it from large to small)
-        # and the standardized gene name.
-        # scrna.data are the non-zero values of the raw, scrna.indices are the indexes for these values
 
-        sorted_genes = [
-            a[1] for a in sorted(zip(-scrna.data, gene_names[scrna.indices]))
-        ]
+        sorted_genes = CellTypeTask.convert_to_double_sorted_geneformer_sequence(
+            scrna_sample=scrna, gene_names=gene_names
+        )
         sequence_string = "[" + "][".join(sorted_genes[:input_max_seq_length]) + "]"
 
         sample_dict[ENCODER_INPUTS_STR] = (
@@ -222,6 +218,27 @@ class CellTypeTask(MammalTask):
             )
 
         return sample_dict
+
+    @staticmethod
+    def convert_to_double_sorted_geneformer_sequence(scrna_sample, gene_names):
+        """convert binned genes to double sorted GeneFormer like format.
+        The sorting is done first over the binned expression values and then on the gene names
+        This is achieved by zipping together the minus the bin (so to sort it from large to small)
+        and the standardized gene name.
+        sample.data are the non-zero values of the raw, sample.indices are the indexes for these values
+
+
+        Args:
+            sample: Dataframe with gene bins and matching indexes
+            gene_names (list[str]):list of gene names matching the list above
+
+        Returns:
+            list[str] - gene names sorted by bin values and then by gene name
+        """
+        return [
+            a[1]
+            for a in sorted(zip(-scrna_sample.data, gene_names[scrna_sample.indices]))
+        ]
 
     @staticmethod
     def process_model_output(
