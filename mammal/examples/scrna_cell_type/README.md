@@ -56,6 +56,6 @@ The package's [main readme](../../../README.md) contains instructions of running
 
 Running is performed with the command:
 
-   ```% python ./mammal/main_finetune.py "--config-name=config.yaml" "--config-path=mammal/examples"```
+   ```% python ./mammal/main_finetune.py "--config-name=config.yaml" "--config-path=examples/scrna_cell_type"```
 
 run from the top level directory of `biomed-multi-alignment`
