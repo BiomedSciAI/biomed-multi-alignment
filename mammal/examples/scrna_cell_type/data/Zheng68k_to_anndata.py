@@ -54,6 +54,7 @@
 
 
 import os
+import subprocess
 from pathlib import Path
 
 import anndata
@@ -80,32 +81,31 @@ if not raw_data_dir.exists():
     # check if the file exists
     if not os.path.exists(gzip_file_name):
         print(
-            f"please download the file {gzip_file_name} from https://www.10xgenomics.com/"
-        )
-        print(
-            " and unzip it in the data directory and then run this script again from that directory"
+            f"please download the file {gzip_file_name} from https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0 into this data directory and then run this script again from that directory"
         )
         raise FileNotFoundError(
-            f"the raw data directory {raw_data_dir} not found under the current directory"
+            f"Both the raw data directory {raw_data_dir} and {gzip_file_name} not found under the current directory"
         )
     else:
-        print(
-            f"please unzip {gzip_file_name} in the data directory and then run this script again from that directory"
-        )
-        raise FileNotFoundError(
-            f"the raw data directory {raw_data_dir} not found under the current directory"
-        )
+        print(f"extracting files from  {gzip_file_name}")
+        subprocess.run(["tar", "xvzf", gzip_file_name])
+        # print(
+        #     f"please unzip {gzip_file_name} in the data directory and then run this script again from that directory"
+        # )
+        # raise FileNotFoundError(
+        #     f"the raw data directory {raw_data_dir} not found under the current directory"
+        # )
 
 #### Download the labels file from a git repository in https://github.com/scverse/scanpy_usage
 # !wget https://raw.githubusercontent.com/scverse/scanpy_usage/refs/heads/master/170503_zheng17/data/zheng17_bulk_lables.txt
 
 labels_file = "zheng17_bulk_lables.txt"
 if not os.path.exists(labels_file):
-    print(
-        f"please download the file {labels_file} from https://raw.githubusercontent.com/scverse/scanpy_usage/refs/heads/master/170503_zheng17/data/zheng17_bulk_lables.txt"
-    )
-    raise FileNotFoundError(f"the cell type labels file {labels_file} not found")
-
+    labels_file_url = "https://raw.githubusercontent.com/scverse/scanpy_usage/refs/heads/master/170503_zheng17/data/zheng17_bulk_lables.txt"
+    print(f"Missing cell-type-labels file {labels_file}")
+    print(f"downloading it from {labels_file_url}")
+    subprocess.run(["wget", labels_file_url])
+    print("downloaded")
 
 #  You should now have a directory called `filtered_matrices_mex/hg19`
 # with the following files
@@ -166,14 +166,25 @@ print("Preprocessing calls' reads")
 # The annData file should ready in the data directory.
 filtered_anndata_file = "Zheng_68k_filtered.h5ad"
 if not os.path.exists(filtered_anndata_file):
-    print("please preprocess data using")
+    print("need to please preprocess data using")
     print(
         f"python process_h5ad_data.py --input-h5ad-file {raw_anndata_file} --output-h5ad-file {filtered_anndata_file}"
     )
     print(
-        "see preprocessing commandline options with 'python process_h5ad_data.py --help'"
+        "you can see preprocessing commandline options with 'python process_h5ad_data.py --help' if you wish to see the options available"
     )
-    raise FileNotFoundError(filtered_anndata_file)
+
+    subprocess.run(
+        [
+            "python",
+            "process_h5ad_data.py",
+            "--input-h5ad-file",
+            raw_anndata_file,
+            "--output-h5ad-file",
+            filtered_anndata_file,
+        ]
+    )
+
 # !ls -sh1 --color=never *.h5ad
 # ```
 # 917616 Zheng_68k.h5ad
