@@ -31,6 +31,9 @@ The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data 
 
  See [preprocess_ann_data in pl_data_module.py](pl_data_module.py#L225) for an implementation and the details.
 
+**See [Steps needed to run the demo on the Zheng68k data](#steps-needed-to-run-the-demo-on-the-zheng68k-data) below for a detailed walkthrough.**
+
+
 An example for packing data into an AnnData file, the
 [Zheng68k_to_anndata.py](data/Zheng68k_to_anndata.py) script, can be found in the data subdirectory.
 To use this script you will need to download fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz from [Fresh 68k PBMCs (Donor A) dataset](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0) from the [10xgenomics website](https://www.10xgenomics.com) (may require filling a form) or some other source.
@@ -78,8 +81,36 @@ finally, the result is the string
 ## Running fine-tune
 The package's [main readme](../../../README.md) contains instructions of running fine-tune.  As explained there, you may need to modify the [config.yaml](config.yaml) file, mainly in the `task` section.  The config is set up under the assumption that the data file created in the [Zheng68k_data_prep.ipynb](data/Zheng68k_data_prep.ipynb) notebook, can be read from the `data` of the example
 
-Running is performed with the command:
+## Steps needed to run the demo on the Zheng68k data:
 
-   ```% python ./mammal/main_finetune.py "--config-name=config.yaml" "--config-path=examples/scrna_cell_type"```
+1. Install the  `biomed-multi-alignment` package with the examples:
 
-run from the top level directory of `biomed-multi-alignment`
+    ```cd biomed-multi-alignment & pip install -e '.[examples]'```
+
+2. Download the "Fresh 68k PBMCs (Donor A) datase" from the [10xgenomics website](https://www.10xgenomics.com):
+
+    The data is in a file called
+
+    `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz`
+
+    which can be found at [Fresh 68k PBMCs (Donor A) dataset](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0)
+    under **"Output and supplemental files -> Gene / cell matrix (filtered)"**
+
+3. Place file in the data directory
+
+    **biomed-multi-alignment/mammal/examples/scrna_cell_type/data**
+
+4. Go into the data directory and run the data preparation script
+
+    ```python Zheng68k_to_anndata.py```
+
+    This will produce a file called `Zheng_68k_filtered.h5ad` in the data directory
+
+5. Edit [biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml](biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml) if needed to change the parameters of the training.  The default setup should work fine.
+
+6. `cd` into the top directory **`biomed-multi-alignment`** of the project
+    and run the main finetune program:
+
+    ```% python ./mammal/main_finetune.py "--config-name=config.yaml" "--config-path=examples/scrna_cell_type"```
+
+When this is done your model should be fine-tuned for the task
