@@ -17,7 +17,7 @@ The required input for the fine-tuning is an AnnData file with scRNA samples:
     *  counts for each gene as values
     *  cell type in the `obs['celltype']` observation for the sample.
 
-### Input for prediction:  TODO:??
+### Input for prediction:
 Similar to the input for fine-tuning, but the cell-types observations are not needed and will be ignored if present.
 
 ## Data and data preparation
@@ -32,7 +32,12 @@ The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data 
  See [preprocess_ann_data in pl_data_module.py](pl_data_module.py#L225) for an implementation and the details.
 
 An example for packing data into an AnnData file, the
-[Zheng68k_data_prep.ipynb](data/Zheng68k_data_prep.ipynb) notebook, can be found in the data subdirectory.  It includes instructions and code for downloading, processing and packing the [Zheng68k](TODO:link) dataset.  It also contains information about preprocessing the AnnData file to a the expected input format and information about that format.
+[Zheng68k_to_anndata.py](data/Zheng68k_to_anndata.py) script, can be found in the data subdirectory.
+To use this script you will need to download fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz from [Fresh 68k PBMCs (Donor A) dataset](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0) from the [10xgenomics website](https://www.10xgenomics.com) (may require filling a form) or some other source.
+place this file in the data directory, cd into it and run  `python Zheng68k_to_anndata.py`.
+
+
+The script includes instructions and code for downloading, processing and packing the [Zheng68k](TODO:link) dataset.  It also contains information about preprocessing the AnnData file to a the expected input format and information about that format.
 
 ## GeneFormer inspired ordered gene encoding string
 
@@ -49,6 +54,25 @@ This stage is done while reading the data, and is not part of the preprocessing.
         return [a[1] for a in sorted(zip(-anndata_object.X.data,anndata_object.var_names.to_numpy()[anndata_object.X.indices]))]
 
 
+### Example:
+Assuming that the data was preprocessed and is now in standard gene names and bin numbers
+
+| original data |||| sorted by bin |||sorted by name |||
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| | ||| | | ||
+| **name** | **bin**  |***\\***|    |  **name** | **bin**   |***\\***|  **name** | **bin**    |
+| ABCD | 4 |***\\***|| ZZTP | **6**  | ***\\***| **B**RCA | 6 |
+| ZZTP | 6 | ***\\***||   BRCA | **6** | ***\\***|**M**INI | 6  |
+| BRCA | 6 | ***\\***|| MINI | **6**  | ***\\***| **Z**ZTP | 6 |
+| MINI | 6 | ***\\***|| ABCD | **4** | ***\\***| **A**BCD | 4 |
+
+
+1. The original data is *[(ABCD,4),( ZZTP,6),(BRCA,6),( MINI,6)]*
+2. The data is first sorted by the bin (in reverse id so it will be form the larges to the smallest)
+3. Within each bin group the data is sorted by the name
+
+finally, the result is the string
+*"ABCD,ZZTP,BRCA,MINI"* which is used as the input for the LLM
 
 
 ## Running fine-tune

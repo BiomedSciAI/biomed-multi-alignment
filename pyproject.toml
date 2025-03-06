@@ -33,6 +33,7 @@ dependencies = [
 examples = [
   "PyTDC",
   "anndata",
+  "click",
 ]
 
 [project.urls]
@@ -46,7 +47,7 @@ target-version = "py310"
 extend-include = ["*.ipynb"]
 
 # Activate all the rules that are pyupgrade-related
-lint.select = [
+tool.ruff.lint.select = [
 #  "UP",   # pyupgrade
   "D",    # pydocstyle
   "PT",   # pytest style checking
