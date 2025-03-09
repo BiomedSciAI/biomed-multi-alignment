@@ -50,7 +50,7 @@ target-version = "py310"
 extend-include = ["*.ipynb"]
 
 # Activate all the rules that are pyupgrade-related
-tool.ruff.lint.select = [
+lint.select = [
 #  "UP",   # pyupgrade
   "D",    # pydocstyle
   "PT",   # pytest style checking
