@@ -87,14 +87,13 @@ The package's [main readme](../../../README.md) contains instructions of running
 
     ```cd biomed-multi-alignment & pip install -e '.[examples]'```
 
-2. Download the "Fresh 68k PBMCs (Donor A) datase" from the [10xgenomics website](https://www.10xgenomics.com):
-
-    The data is in a file called
+2.  From the [10xgenomics website](https://www.10xgenomics.com), Download
 
     `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz`
 
     which can be found at [Fresh 68k PBMCs (Donor A) dataset](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0)
     under **"Output and supplemental files -> Gene / cell matrix (filtered)"**
+
 
 3. Place file in the data directory
 
@@ -104,7 +103,9 @@ The package's [main readme](../../../README.md) contains instructions of running
 
     ```python Zheng68k_to_anndata.py```
 
-    This will produce a file called `Zheng_68k_filtered.h5ad` in the data directory
+    This will produce a file called `Zheng_68k_preprocessed.h5ad` in the data directory.
+
+    Use `python Zheng68k_to_anndata.py --help` to see the possible command line options which control the pre-processing process.
 
 5. Edit [biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml](biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml) if needed to change the parameters of the training.  The default setup should work fine.
 

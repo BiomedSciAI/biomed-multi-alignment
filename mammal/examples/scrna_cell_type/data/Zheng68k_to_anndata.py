@@ -249,9 +249,9 @@ def pre_process_anndata_file(input_h5ad_file, output_h5ad_file, verbose=False):
     # for a list of available parameters
 
     # This script can be used to filter and process the AnnData (the "!" indicates to the notebook to run this as a shell command, so remove it for commandline use).
-    # The output of this is stored in `Zheng_68k_filtered.h5ad`, and us used by the config to run the model
+    # The output of this is stored in `Zheng_68k_preprocessed.h5ad`, and us used by the config to run the model
 
-    # ! python process_h5ad_data.py --input-h5ad-file Zheng_68k.h5ad --output-h5ad-file Zheng_68k_filtered.h5ad
+    # ! python process_h5ad_data.py --input-h5ad-file Zheng_68k.h5ad --output-h5ad-file Zheng_68k_preprocessed.h5ad
     # The annData file should ready in the data directory.
 
     if verbose:
@@ -278,7 +278,7 @@ def pre_process_anndata_file(input_h5ad_file, output_h5ad_file, verbose=False):
     # !ls -sh1 --color=never *.h5ad
     # ```
     # 917616 Zheng_68k.h5ad
-    # 886288 Zheng_68k_filtered.h5ad
+    # 886288 Zheng_68k_preprocessed.h5ad
     # ```
 
     if verbose:
