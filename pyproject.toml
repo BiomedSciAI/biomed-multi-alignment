@@ -3,8 +3,6 @@
 # - for configurations insufficiently supported by pyproject.toml, use setup.cfg instead
 # - setup.py discouraged; minimal stub included only for compatibility with legacy tools
 
-# WILL THIS WORK NOW?
-
 
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
