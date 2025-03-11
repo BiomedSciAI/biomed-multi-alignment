@@ -1,0 +1,192 @@
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+import anndata
+import pytorch_lightning as pl
+from fuse.data.datasets.dataset_default import DatasetDefault
+from fuse.data.pipelines.pipeline_default import PipelineDefault
+from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
+from fuse.data.utils.collates import CollateDefault
+from sklearn.model_selection import train_test_split
+from torch.utils.data.dataloader import DataLoader
+
+from mammal.keys import *  # noqa
+
+from .anndata_op import OpReadAnnData
+
+
+class ScRNAMLMDataModule(pl.LightningDataModule):
+    skip_keys = [
+        "scrna.gene_names",
+        "scrna.scrna",
+    ]
+
+    def __init__(
+        self,
+        *,
+        data_path: str,
+        batch_size: int,
+        tokenizer_op: ModularTokenizerOp,
+        data_preprocessing: Callable,
+        train_dl_kwargs: dict,
+        valid_dl_kwargs: dict,
+        input_max_seq_length: int = 500,
+        encoder_input_max_seq_len: int = 512,
+        mask_prob: float = 0.1,
+        seed: int = 42,
+        stratify_by=None,
+    ) -> None:
+        """_summary_
+        Args:
+            data_path (str): path to the raw data, if not exist, will download the data to the given path.
+            batch_size (int): batch size
+            tokenizer_op (ModularTokenizerOp): tokenizer op
+            encoder_inputs_max_seq_len: max tokenizer sequence length for the encoder inputs,
+            mask_prob: The probability of masking a gene
+            train_dl_kwargs (dict): train dataloader constructor parameters
+            valid_dl_kwargs (dict): validation dataloader constructor parameters
+            seed (int): random seed
+        """
+        super().__init__()
+        self.data_path = data_path
+        self.tokenizer_op = tokenizer_op
+        self.input_max_seq_length = input_max_seq_length
+        self.encoder_input_max_seq_len = encoder_input_max_seq_len
+        self.mask_prob = mask_prob
+        self.batch_size = batch_size
+        self.train_dl_kwargs = train_dl_kwargs
+        self.valid_dl_kwargs = valid_dl_kwargs
+        self.seed = seed
+        self.data_preprocessing = data_preprocessing
+        self.pad_token_id = self.tokenizer_op.get_token_id("<PAD>")
+        self.ds_dict: dict[str, Any] = {}
+        self.stratify_by = stratify_by
+
+    def setup(self, stage: str) -> None:
+        self.ds_dict = load_datasets(
+            data_path=self.data_path, stratify_by=self.stratify_by
+        )
+
+        task_pipeline = [
+            (
+                # Prepare the input string(s) in modular tokenizer input format
+                self.data_preprocessing,
+                dict(
+                    sequence_key="scrna.scrna",
+                    tokenizer_op=self.tokenizer_op,
+                    input_max_seq_length=self.input_max_seq_length,
+                    encoder_input_max_seq_len=self.encoder_input_max_seq_len,
+                    mask_prob=self.mask_prob,
+                    seed=self.seed,
+                ),
+            ),
+        ]
+
+        for ds in self.ds_dict.values():
+            ds.dynamic_pipeline.extend(task_pipeline)
+
+    def train_dataloader(self) -> DataLoader:
+        train_loader = DataLoader(
+            dataset=self.ds_dict["train"],
+            batch_size=self.batch_size,
+            collate_fn=self.collate_fn(),
+            shuffle=True,
+            **self.train_dl_kwargs,
+        )
+        return train_loader
+
+    def val_dataloader(self) -> DataLoader:
+        val_loader = DataLoader(
+            self.ds_dict["valid"],
+            batch_size=self.batch_size,
+            collate_fn=self.collate_fn(),
+            **self.valid_dl_kwargs,
+        )
+
+        return val_loader
+
+    def test_dataloader(self) -> DataLoader:
+        test_loader = DataLoader(
+            self.ds_dict["test"],
+            batch_size=self.batch_size,
+            collate_fn=self.collate_fn(),
+            **self.valid_dl_kwargs,
+        )
+
+        return test_loader
+
+    def predict_dataloader(self) -> DataLoader:
+        return self.test_dataloader()
+
+    def collate_fn(self):
+        return CollateDefault(skip_keys=self.skip_keys)
+
+
+def anndata_train_test_split(
+    h5ad_file, test_size=0.1, random_state=42, stratify_by=None
+):
+    if stratify_by is not None:
+        stratify = h5ad_file.obs[stratify_by]
+    else:
+        stratify = None
+
+    train_ids, valid_ids = train_test_split(
+        h5ad_file.obs,
+        test_size=test_size,
+        random_state=random_state,
+        stratify=stratify,
+    )
+    train_adata = h5ad_file[train_ids.index]
+    validata_adata = h5ad_file[valid_ids.index]
+    return train_adata, validata_adata
+
+
+def load_datasets(
+    data_path: str | Path = "data", stratify_by=None
+) -> dict[str, DatasetDefault]:
+
+    data_path = Path(data_path)
+    if not data_path.is_absolute():
+        data_path = Path(__file__).parent / data_path
+    # read files
+    anndata_object = anndata.read_h5ad(data_path)
+    anndata_dict = {}
+    anndata_dict["all_data"] = anndata_object
+    anndata_dict["all_train"], anndata_dict["test"] = anndata_train_test_split(
+        anndata_dict["all_data"],
+        test_size=0.1,
+        stratify_by=stratify_by,
+    )
+    anndata_dict["train"], anndata_dict["valid"] = anndata_train_test_split(
+        anndata_dict["all_train"],
+        test_size=0.1 / (1.0 - 0.1),
+        random_state=2024,
+        stratify_by=stratify_by,
+    )
+
+    ds_dict = {}
+    for set_name in ["train", "valid", "test"]:
+        input_anndata = anndata_dict[set_name]
+        size = input_anndata.shape[0]
+        print(f"{set_name} set size is {size}")
+
+        dynamic_pipeline = PipelineDefault(
+            "cell_type",
+            [
+                (OpReadAnnData(input_anndata), {"prefix": "scrna"}),
+            ],
+        )
+
+        ds = DatasetDefault(sample_ids=size, dynamic_pipeline=dynamic_pipeline)
+        ds.create()
+        ds_dict[set_name] = ds
+
+    return ds_dict
+
+
+if __name__ == "__main__":
+    ds_dict = load_datasets("data/Zheng68k_filtered.h5ad", stratify_by=["label"])
+    t0 = ds_dict["train"][0]
+    print(t0)
+    print(ds_dict["test"][0])
