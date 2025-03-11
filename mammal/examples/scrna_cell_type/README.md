@@ -86,11 +86,13 @@ The package's [main readme](../../../README.md) contains instructions of running
 
 ## Steps needed to run the demo on the Zheng68k data:
 
-1. Install the  `biomed-multi-alignment` package with the examples:
+In this example we will fine-tune on cell type by doing the following:
+
+1. **Install** the  `biomed-multi-alignment` package with the examples:
 
     ```cd biomed-multi-alignment & pip install -e '.[examples]'```
 
-2.  From the [10xgenomics website](https://www.10xgenomics.com), Download
+2.  From the [10xgenomics website](https://www.10xgenomics.com), **Download**
 
     `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz`
 
@@ -98,13 +100,15 @@ The package's [main readme](../../../README.md) contains instructions of running
     under **"Output and supplemental files -> Gene / cell matrix (filtered)"**
 
 
-3. Place file in the data directory
+3. **Place** file in the data directory
 
     **biomed-multi-alignment/mammal/examples/scrna_cell_type/data**
 
-4. Go into the data directory and run the data preparation script
+4. Go into the data directory and run the **data preparation** script
 
     ```python Zheng68k_to_anndata.py```
+
+    This script downloads the label builds an AnnData file from the data and l
 
     This will produce a file called `Zheng_68k_preprocessed.h5ad` in the data directory.
 
