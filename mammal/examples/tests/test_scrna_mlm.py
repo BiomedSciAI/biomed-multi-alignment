@@ -36,7 +36,8 @@ def test_gene_expression_mlm():
         lbl = sample["data.mlm_format.labels"][index]
         assert "<DECODER_START>" in decoder_input
         assert decoder_input.replace("<DECODER_START>", "") == lbl
-        assert "SENTINEL_ID" in decoder_input
+        assert "SENTINEL_ID" in decoder_input  # encoder
+        assert "SENTINEL_ID" in encoder_input
         assert (
             "<MOLECULAR_ENTITY><MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED>"
             in encoder_input
