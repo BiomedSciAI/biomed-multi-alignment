@@ -1,0 +1,73 @@
+name: cell_type_finetune
+root: "."
+model_dir: ${root}/${name}
+seed: 2024
+
+task:
+  _target_: mammal.examples.scrna_cell_type.task.CellTypeTask
+  _partial_: True
+  data_module_kwargs:
+    data_path: "data/Zheng_68k_preprocessed.h5ad"
+    batch_size: 20
+    train_dl_kwargs:
+      num_workers: 8
+    valid_dl_kwargs:
+      num_workers: 8
+    input_max_seq_length: 500
+    encoder_input_max_seq_len: 512
+    labels_max_seq_len: 20
+
+# tokenizer
+tokenizer:
+  tokenizer_path: ibm-research/biomed.omics.bl.sm.ma-ted-458m
+
+model:
+  pretrained_kwargs: # arguments for Mammal.from_pretrained() which triggered only if pretrained_model_name_or_path is not None
+    pretrained_model_name_or_path: ibm-research/biomed.omics.bl.sm.ma-ted-458m
+    # config_overrides:
+      # use_lora: True
+
+# lightning module
+module:
+  opt_callable:
+    _target_: torch.optim.AdamW
+    _partial_: true # should get also parameters
+    lr: 0.00001
+
+  lr_sch_callable:
+    _target_: mammal.lr_schedulers.cosine_annealing_with_warmup_lr_scheduler
+    _partial_: True
+    T_max: 10000
+    num_warmup_steps: 300
+    eta_min_factor: 0.1
+
+  model_dir: ${model_dir}
+  best_epoch_source:
+    monitor: validation.metrics.cell_type_acc # see metrics.py:classification_metrics
+    mode: max
+
+# train
+trainer:
+  # arguments for pytorch_lightning.Trainer()
+  max_epochs: 100
+  default_root_dir: ${model_dir}
+  num_sanity_val_steps: 0
+#  val_check_interval: 0.1
+
+
+# experiment tracker
+track_clearml: # arguments for fuse.dl.lightning.pl_funcs.start_clearml_logger
+  project_name: "mammal/opensource"
+  task_name: ${name}
+  tags: "mammal"
+  reuse_last_task_id: True
+  continue_last_task: False
+  offline_mode: False
+
+evaluate : false #if true then it will use lightning's validate on the test dataloader
+
+hydra:
+  run:
+    dir: ${model_dir}
+  job:
+    chdir: False
