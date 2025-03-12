@@ -174,7 +174,7 @@ class ScRNAMLMTask(MammalTask):
             key_out_masked_seq="data.masked_seq",
         )
         mask_op(sample_dict)
-        create_op = OpMaskedSeqToMLM()
+        create_op = OpMaskedSeqToMLM(tokenizer_type="GENE")
         create_op(
             sample_dict, key_in_masked_seq="data.masked_seq", key_out="data.mlm_format"
         )

@@ -1,5 +1,3 @@
-import re
-
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 
 from mammal.examples.scrna_mlm.pl_data_module import ScRNAMLMDataModule
@@ -33,8 +31,15 @@ def test_gene_expression_mlm():
     sample = next(iter(train_dl))
     assert sample is not None
     for index in range(len(sample["data.query.encoder_input"])):
-        encoder_input = sample["data.query.encoder_input"][index]
-        assert "<MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED>" in encoder_input
-        assert len(re.findall(r"\[(.*?)\]", encoder_input)) > 0
-        # assert label_special_token + "<SENTINEL_ID_0>" in encoder_input
+        encoder_input = sample["data.mlm_format.encoder_input"][index]
+        decoder_input = sample["data.mlm_format.decoder_input"][index]
+        lbl = sample["data.mlm_format.labels"][index]
+        assert "<DECODER_START>" in decoder_input
+        assert decoder_input.replace("<DECODER_START>", "") == lbl
+        assert "SENTINEL_ID" in decoder_input
+        assert (
+            "<MOLECULAR_ENTITY><MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED>"
+            in encoder_input
+        )
         assert "<EOS>" in encoder_input
+        assert "<@TOKENIZER-TYPE=GENE>" in encoder_input
