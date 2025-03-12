@@ -77,8 +77,6 @@ class ScRNAMLMDataModule(pl.LightningDataModule):
                     tokenizer_op=self.tokenizer_op,
                     input_max_seq_length=self.input_max_seq_length,
                     encoder_input_max_seq_len=self.encoder_input_max_seq_len,
-                    mask_prob=self.mask_prob,
-                    seed=self.seed,
                 ),
             ),
         ]

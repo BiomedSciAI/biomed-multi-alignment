@@ -1,19 +1,11 @@
 from typing import Any
 
 import pytorch_lightning as pl
-import torch
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 
 from mammal.examples.scrna_mlm.anndata_op import OpMaskedSeqToMLM, OpRandomMaskVector
 from mammal.examples.scrna_mlm.pl_data_module import ScRNAMLMDataModule
-from mammal.keys import (
-    CLS_PRED,
-    ENCODER_INPUTS_ATTENTION_MASK,
-    ENCODER_INPUTS_STR,
-    ENCODER_INPUTS_TOKENS,
-    LABELS_TOKENS,
-    SCORES,
-)
+from mammal.keys import *
 from mammal.task import (
     MammalTask,
     MetricBase,
@@ -27,6 +19,8 @@ class ScRNAMLMTask(MammalTask):
         tokenizer_op: ModularTokenizerOp,
         data_module_kwargs: dict,
         logger: Any | None = None,
+        mask_prob: float = 0.1,
+        seed: int = 42,
     ) -> None:
         super().__init__(
             name="scrna_mlm",
@@ -38,12 +32,18 @@ class ScRNAMLMTask(MammalTask):
         self.preds_key = CLS_PRED
         self.scores_key = SCORES
         self.labels_key = LABELS_TOKENS
+        self.mask_op = OpRandomMaskVector(
+            mask_prob=mask_prob,
+            random_seed=seed,
+            key_in_vec="sorted_genes",  # "data.query.encoder_input",
+            key_out_masked_seq="data.masked_seq",
+        )
+        self.create_op = OpMaskedSeqToMLM(tokenizer_type="GENE")
 
     def data_module(self) -> pl.LightningDataModule:
         return ScRNAMLMDataModule(
             tokenizer_op=self._tokenizer_op,
             data_preprocessing=self.data_preprocessing,
-            stratify_by=["label"],
             **self._data_module_kwargs,
         )
 
@@ -55,15 +55,13 @@ class ScRNAMLMTask(MammalTask):
         validation_metrics = super().validation_metrics()
         return validation_metrics
 
-    @staticmethod
     def data_preprocessing(
+        self,
         sample_dict: dict,
         *,
         sequence_key: str,
         input_max_seq_length: int | None = 1260,
         encoder_input_max_seq_len: int | None = 1260,
-        mask_prob: float = 0.1,
-        seed: float = 42,
         tokenizer_op: ModularTokenizerOp,
     ):
         """process a sample into the format expected by the model
@@ -78,25 +76,6 @@ class ScRNAMLMTask(MammalTask):
 
         Returns:
             dict: the sample dict with added keys and values:
-
-        Mammal model expects a dictionary with a set of keys to be able to run.  This method converts the data into the expected format.
-        Here is a list of the required fields for an encoder-decoder task:
-            ENCODER_INPUTS_STR
-            ENCODER_INPUTS_TOKENS
-            ENCODER_INPUTS_ATTENTION_MASK
-
-            LABELS_STR
-            LABELS_TOKENS
-            LABELS_ATTENTION_MASK
-
-            DECODER_INPUTS_STR
-            DECODER_INPUTS_TOKENS
-            DECODER_INPUTS_ATTENTION_MASK
-
-            see MammalTask.data_module for more information about these keys and their use.
-
-
-        The three *_str values are constricted here, and then the others are derived from them by the tokenizer_op
         """
         scrna = sample_dict[sequence_key]
 
@@ -110,14 +89,13 @@ class ScRNAMLMTask(MammalTask):
         sorted_genes = ScRNAMLMTask.convert_to_double_sorted_geneformer_sequence(
             scrna_sample=scrna, gene_names=gene_names
         )
-        sequence_string = "[" + "][".join(sorted_genes[:input_max_seq_length]) + "]"
-
-        sample_dict[ENCODER_INPUTS_STR] = (
-            f"<@TOKENIZER-TYPE=GENE><MOLECULAR_ENTITY><MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED><{sequence_string}<EOS>"
-        )
         sample_dict["sorted_genes"] = [
             f"[{v}]" for v in sorted_genes[:input_max_seq_length]
         ]
+        self.mask_op(sample_dict)
+        self.create_op(
+            sample_dict, key_in_masked_seq="data.masked_seq", key_out="data.query"
+        )
         tokenizer_op(
             sample_dict=sample_dict,
             key_in=ENCODER_INPUTS_STR,
@@ -125,24 +103,20 @@ class ScRNAMLMTask(MammalTask):
             key_out_attention_mask=ENCODER_INPUTS_ATTENTION_MASK,
             max_seq_len=encoder_input_max_seq_len,
         )
-        sample_dict[ENCODER_INPUTS_TOKENS] = torch.tensor(
-            sample_dict[ENCODER_INPUTS_TOKENS]
+        tokenizer_op(
+            sample_dict=sample_dict,
+            key_in=DECODER_INPUTS_STR,
+            key_out_tokens_ids=DECODER_INPUTS_TOKENS,
+            key_out_attention_mask=DECODER_INPUTS_ATTENTION_MASK,
+            max_seq_len=encoder_input_max_seq_len,
         )
-        sample_dict[ENCODER_INPUTS_ATTENTION_MASK] = torch.tensor(
-            sample_dict[ENCODER_INPUTS_ATTENTION_MASK]
+        tokenizer_op(
+            sample_dict=sample_dict,
+            key_in=LABELS_STR,
+            key_out_tokens_ids=LABELS_TOKENS,
+            key_out_attention_mask=LABELS_ATTENTION_MASK,
+            max_seq_len=encoder_input_max_seq_len,
         )
-        mask_op = OpRandomMaskVector(
-            mask_prob=mask_prob,
-            random_seed=seed,
-            key_in_vec="sorted_genes",  # "data.query.encoder_input",
-            key_out_masked_seq="data.masked_seq",
-        )
-        mask_op(sample_dict)
-        create_op = OpMaskedSeqToMLM(tokenizer_type="GENE")
-        create_op(
-            sample_dict, key_in_masked_seq="data.masked_seq", key_out="data.mlm_format"
-        )
-
         return sample_dict
 
     @staticmethod
