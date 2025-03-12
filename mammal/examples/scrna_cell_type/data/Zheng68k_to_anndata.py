@@ -1,4 +1,4 @@
-# # Notebook to pack zheng68k data from x10genomics into an AnnData (h5ad) file.
+# # script to pack zheng68k data from x10genomics into an AnnData (h5ad) file.
 
 # This example follows [Zheng]() for identification of white blood cell types from single cell RNA expression data.
 
@@ -16,8 +16,6 @@
 
 
 # ## preprocessing data transformations
-
-# There is a commented example of this process at the end of this notebook.
 
 # * Filter out cell with less then 200 active genes
 
@@ -43,15 +41,6 @@
 
 
 # This notebook assumes that it is run from the `bmfm-mammal-release/mammal/examples/scrna_cell_type` directory ("the current directory").
-# # check the current directory.
-
-# this is just a fancy pwd, replace with !pwd if you need
-# !print -D $PWD
-# expecting the answer to be something like
-# `~/git/biomed-multi-alignment/mammal/examples/scrna_cell_type/data`
-#
-#  Notice that the `biomed-multi-alignment` will probably be placed in a different location on your system.
-
 
 import os
 import subprocess
@@ -67,9 +56,6 @@ from scipy.io import mmread
 ### Obtaining the source data:
 # The main data is available online, for example in the [10xGenomics](https://www.10xgenomics.com/) cite.  The labels are based on the data in [LINK](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0)
 # From this site download the file `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz` and place it in this directory.
-
-#### Unzip the file.
-# !tar -xzvf fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz
 
 
 @click.command()
@@ -248,10 +234,10 @@ def pre_process_anndata_file(input_h5ad_file, output_h5ad_file, verbose=False):
 
     # for a list of available parameters
 
-    # This script can be used to filter and process the AnnData (the "!" indicates to the notebook to run this as a shell command, so remove it for commandline use).
+    # This script can be used to filter and process the AnnData
     # The output of this is stored in `Zheng_68k_preprocessed.h5ad`, and us used by the config to run the model
 
-    # ! python process_h5ad_data.py --input-h5ad-file Zheng_68k.h5ad --output-h5ad-file Zheng_68k_preprocessed.h5ad
+    # > python process_h5ad_data.py --input-h5ad-file Zheng_68k.h5ad --output-h5ad-file Zheng_68k_preprocessed.h5ad
     # The annData file should ready in the data directory.
 
     if verbose:
@@ -275,7 +261,7 @@ def pre_process_anndata_file(input_h5ad_file, output_h5ad_file, verbose=False):
 
     subprocess.run(anndata_preprocessing_arguments)
 
-    # !ls -sh1 --color=never *.h5ad
+    # !ls -sh1 *.h5ad
     # ```
     # 917616 Zheng_68k.h5ad
     # 886288 Zheng_68k_preprocessed.h5ad
