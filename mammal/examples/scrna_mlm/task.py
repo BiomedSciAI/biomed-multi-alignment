@@ -1,14 +1,11 @@
 from typing import Any
 
-import numpy as np
 import pytorch_lightning as pl
 import torch
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 
-from mammal.examples.scrna_cell_type.pl_data_module import (
-    CellTypeDataModule,
-)
 from mammal.examples.scrna_mlm.anndata_op import OpMaskedSeqToMLM, OpRandomMaskVector
+from mammal.examples.scrna_mlm.pl_data_module import ScRNAMLMDataModule
 from mammal.keys import (
     CLS_PRED,
     ENCODER_INPUTS_ATTENTION_MASK,
@@ -17,25 +14,10 @@ from mammal.keys import (
     LABELS_TOKENS,
     SCORES,
 )
-from mammal.metrics import classification_metrics
 from mammal.task import (
     MammalTask,
     MetricBase,
 )
-
-ALL_CLASS_LABELS = [
-    "[CL:0000794]",
-    "[CL:0001062]",
-    "[CL:0000939]",
-    "[CL:0000792]",
-    "[CL:0000236]",
-    "[CL:0001204]",
-    "[CL:0001054]",
-    "[CL:0000451]",
-    "[CL:0000895]",
-    "[CL:0000049]",
-    "[CL:0000546]",
-]
 
 
 class ScRNAMLMTask(MammalTask):
@@ -58,7 +40,7 @@ class ScRNAMLMTask(MammalTask):
         self.labels_key = LABELS_TOKENS
 
     def data_module(self) -> pl.LightningDataModule:
-        return CellTypeDataModule(
+        return ScRNAMLMDataModule(
             tokenizer_op=self._tokenizer_op,
             data_preprocessing=self.data_preprocessing,
             stratify_by=["label"],
@@ -67,28 +49,10 @@ class ScRNAMLMTask(MammalTask):
 
     def train_metrics(self) -> dict[str, MetricBase]:
         metrics = super().train_metrics()
-        metrics.update(
-            # TODO: update this
-            classification_metrics(
-                self.name(),
-                class_position=1,
-                tokenizer_op=self._tokenizer_op,
-                class_tokens=ALL_CLASS_LABELS,
-            )
-        )
-
         return metrics
 
     def validation_metrics(self) -> dict[str, MetricBase]:
         validation_metrics = super().validation_metrics()
-        validation_metrics.update(
-            classification_metrics(
-                self.name(),
-                class_position=1,
-                tokenizer_op=self._tokenizer_op,
-                class_tokens=ALL_CLASS_LABELS,
-            )
-        )
         return validation_metrics
 
     @staticmethod
@@ -201,33 +165,3 @@ class ScRNAMLMTask(MammalTask):
             a[1]
             for a in sorted(zip(-scrna_sample.data, gene_names[scrna_sample.indices]))
         ]
-
-    @staticmethod
-    def process_model_output(
-        tokenizer_op: ModularTokenizerOp,
-        decoder_output: np.ndarray,
-        decoder_output_scores: np.ndarray,
-    ) -> dict | None:
-        ans = None
-        all_class_label_ids = [
-            tokenizer_op.get_token_id(class_label) for class_label in ALL_CLASS_LABELS
-        ]
-        classification_position = 1
-        if decoder_output_scores is not None:
-            class_scores = decoder_output_scores[classification_position][
-                all_class_label_ids
-            ]
-            best_match = class_scores.argmax()
-            non_normalized_score = class_scores[best_match]
-            normalization_factor = class_scores.sum()
-            normalized_score = non_normalized_score / (
-                normalization_factor + 1e-30
-            )  # incase non seem to match
-            ans = {
-                "cell_type": ALL_CLASS_LABELS[best_match],
-                "pred": all_class_label_ids[best_match],
-                "not_normalized_scores": non_normalized_score,
-                "normalized_scores": normalized_score,
-            }
-
-        return ans
