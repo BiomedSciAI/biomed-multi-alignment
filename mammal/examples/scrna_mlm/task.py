@@ -1,5 +1,5 @@
 from typing import Any
-
+import torch
 import pytorch_lightning as pl
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 
@@ -117,6 +117,10 @@ class ScRNAMLMTask(MammalTask):
             key_out_attention_mask=LABELS_ATTENTION_MASK,
             max_seq_len=encoder_input_max_seq_len,
         )
+        for entry in [DECODER_INPUTS_TOKENS,DECODER_INPUTS_ATTENTION_MASK,ENCODER_INPUTS_TOKENS,ENCODER_INPUTS_ATTENTION_MASK,LABELS_TOKENS,LABELS_ATTENTION_MASK]:
+            sample_dict[entry] = torch.tensor(
+                sample_dict[entry]
+            )
         return sample_dict
 
     @staticmethod
