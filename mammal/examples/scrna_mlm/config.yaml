@@ -4,7 +4,7 @@ model_dir: ${root}/${name}
 seed: 2024
 
 task:
-  _target_: mammal.examples.scrna_cell_type.task.CellTypeTask
+  _target_: mammal.examples.scrna_mlm.task.ScRNAMLMTask
   _partial_: True
   data_module_kwargs:
     data_path: "data/Zheng_68k_preprocessed.h5ad"
