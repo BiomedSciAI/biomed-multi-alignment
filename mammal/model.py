@@ -149,8 +149,12 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                 embedding_size=self.t5_model.get_input_embeddings().embedding_dim,
             )
         if getattr(self.config, "scalars_prediction_head", None) is not None:
+            num_classes = self.config.scalars_prediction_head.get("num_classes", 1)
+            if self.config.scalars_prediction_head.get("predict_error", False):
+                num_classes *= 2
+
             self.scalars_prediction_head = get_encoder_mlp_head(
-                num_classes=self.config.scalars_prediction_head["num_classes"],
+                num_classes=num_classes,
                 layers=self.config.scalars_prediction_head["layers"],
                 dropout=self.config.scalars_prediction_head["dropout"],
                 embedding_size=self.t5_model.get_input_embeddings().embedding_dim,
