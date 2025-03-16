@@ -406,7 +406,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         """
         if not os.path.exists(pretrained_model_name_or_path):
             print(
-                f"Path doesn't exist. Will try to download fron hf hub. {pretrained_model_name_or_path=}"
+                f"Path doesn't exist. Will try to download from hf hub. {pretrained_model_name_or_path=}"
             )
             # Download ckpt dir from HF
             try:
@@ -547,7 +547,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                 model.t5_model = get_lora_model(model.t5_model)
 
         else:
-            raise ValueError()
+            raise ValueError(f"Got an invalid input, {pretrained_model_name_or_path=}")
         return model
 
     @property
