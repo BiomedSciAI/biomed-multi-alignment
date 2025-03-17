@@ -1,4 +1,4 @@
-name: cell_type_finetune
+name: scrna_mlm_finetune
 root: "."
 model_dir: ${root}/${name}
 seed: 2024
@@ -8,14 +8,14 @@ task:
   _partial_: True
   data_module_kwargs:
     data_path: "data/Zheng_68k_preprocessed.h5ad"
-    batch_size: 20
+    batch_size: 5
     train_dl_kwargs:
       num_workers: 8
     valid_dl_kwargs:
       num_workers: 8
     input_max_seq_length: 500
     encoder_input_max_seq_len: 512
-    labels_max_seq_len: 20
+    #labels_max_seq_len: 20
 
 # tokenizer
 tokenizer:
@@ -43,7 +43,6 @@ module:
 
   model_dir: ${model_dir}
   best_epoch_source:
-    monitor: validation.metrics.cell_type_acc # see metrics.py:classification_metrics
     mode: max
 
 # train
@@ -53,7 +52,8 @@ trainer:
   default_root_dir: ${model_dir}
   num_sanity_val_steps: 0
 #  val_check_interval: 0.1
-
+  limit_train_batches: 128
+  limit_val_batches: 128
 
 # experiment tracker
 track_clearml: # arguments for fuse.dl.lightning.pl_funcs.start_clearml_logger
