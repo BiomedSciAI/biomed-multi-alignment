@@ -155,7 +155,7 @@ def load_and_update_tokenizer_op(cfg):
             # TODO: write better message
             print(
                 10 * "****",
-                " Added %d special tokens to the tokenizer " % num_new_tokens_added,
+                f" Added { num_new_tokens_added} special tokens to the tokenizer ",
                 10 * "****",
             )
 

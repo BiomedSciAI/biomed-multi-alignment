@@ -47,7 +47,7 @@ class MammalTask:
         Return a lightning data module for the task.
         The dataloaders implemented in this datamodule expect to iterate over batches.
         Each batch represented by a dict.
-        In the dictionary the following key-value pairs must set:
+        In the dictionary the following key-value pairs must be set:
 
         mammal.keys.ENCODER_INPUTS_STR # the original string representation of encoder input - used for debug
         mammal.keys.ENCODER_INPUTS_TOKENS # encoder input token ids
