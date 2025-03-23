@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import scanpy as sc
+from anndata_op import OpReadAnnData
 from fuse.data.datasets.dataset_default import DatasetDefault
 from fuse.data.pipelines.pipeline_default import PipelineDefault
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
@@ -16,8 +17,6 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data.dataloader import DataLoader
 
 from mammal.keys import *  # noqa
-
-from .anndata_op import OpReadAnnData
 
 
 class CellTypeDataModule(pl.LightningDataModule):
@@ -35,11 +34,12 @@ class CellTypeDataModule(pl.LightningDataModule):
         data_preprocessing: Callable,
         train_dl_kwargs: dict,
         valid_dl_kwargs: dict,
+        label_name="celltype",
         input_max_seq_length: int = 500,
         encoder_input_max_seq_len: int = 512,
         labels_max_seq_len: int = 20,
         seed: int = 42,
-        stratify_by=None,
+        stratify_by_label=False,
     ) -> None:
         """_summary_
         Args:
@@ -61,11 +61,15 @@ class CellTypeDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.train_dl_kwargs = train_dl_kwargs
         self.valid_dl_kwargs = valid_dl_kwargs
+        self.label_name = label_name
         self.seed = seed
         self.data_preprocessing = data_preprocessing
         self.pad_token_id = self.tokenizer_op.get_token_id("<PAD>")
         self.ds_dict: dict[str, Any] = {}
-        self.stratify_by = stratify_by
+        if stratify_by_label:
+            self.stratify_by = self.label_name
+        else:
+            self.stratify_by = None
 
     def setup(self, stage: str) -> None:
         self.ds_dict = load_datasets(
@@ -272,7 +276,7 @@ def preprocess_ann_data(
 
 
 if __name__ == "__main__":
-    ds_dict = load_datasets("data/Zheng68k_filtered.h5ad", stratify_by=["label"])
-    t0 = ds_dict["train"][0]
+    _ds_dict = load_datasets("data/Zheng68k_filtered.h5ad", stratify_by=["label"])
+    t0 = _ds_dict["train"][0]
     print(t0)
-    print(ds_dict["test"][0])
+    print(_ds_dict["test"][0])

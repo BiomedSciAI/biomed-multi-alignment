@@ -8,13 +8,15 @@ task:
   _partial_: True
   data_module_kwargs:
     data_path: "data/Zheng_68k_preprocessed.h5ad" #  this should be absolute or relative to the directory with the example code
+    # this is the name of the observation the model will try to predict
+    label_name: "celltype"
     batch_size: 20
-    # tokenizer_op is provided later, dymanicly
+    # tokenizer_op is provided later, dynamically
     train_dl_kwargs: # Dataloader constructor parameters
       num_workers: 8
     valid_dl_kwargs: # Dataloader constructor parameters
       num_workers: 8
-    # data_preprocessing is provided later, dymanicly
+    # data_preprocessing is provided later, dynamically
     input_max_seq_length: 500
     encoder_input_max_seq_len: 512
     labels_max_seq_len: 20

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import anndata
 import click
@@ -23,12 +23,13 @@ from mammal.model import Mammal
 @click.argument("task_name", default="cell_type")
 @click.option(
     "--model-path",
-    default="/dccstor/mm_hcls/usr/matanin/mammal_extention/scrna_cell_type/mammalian_scRNA_cell_type_zeng68_24h.ckpt",
+    "-m",
     help="Specify the model dir.",
 )
 @click.option(
     "--tokenizer_path",
-    default="/dccstor/mm_hcls/usr/matanin/mammal_extention/scrna_cell_type/",
+    default=None,
+    type=str,
     help="Specify the tokenizer path.",
 )
 @click.option(
@@ -36,9 +37,21 @@ from mammal.model import Mammal
     "-i",
     type=str,
     help="Specify the A5HD (AnnData) input file.",
-    default="/u/matanin/git/biomed-multi-alignment/mammal/examples/scrna_cell_type/data/Zheng_68k_processed.h5ad",
+    default="data/Zheng_68k_processed.h5ad",
 )
 @click.option("--sample_id", "-s", type=int, default=0)
+@click.option(
+    "--verbose",
+    "-v",
+    count=True,
+    default=1,
+)
+@click.option(
+    "--test-h5ad-file",
+    "-T",
+    is_flag=True,
+    default=False,
+)
 @click.option(
     "--device", default="cpu", help="Specify the device to use (default: 'cpu')."
 )
@@ -48,11 +61,13 @@ def main(
     sample_id: int,
     model_path: str,
     tokenizer_path: str,
+    verbose: int,
+    test_h5ad_file: bool,
     device: str,
 ):
 
     tokenizer_op, nn_model = get_tokenizer_and_model(tokenizer_path, model_path, device)
-    # task_dict = load_model(task_name=task_name, device=device)
+
     # convert to MAMMAL style
 
     anndata_object = anndata.read_h5ad(h5ad_file_path)
@@ -70,15 +85,31 @@ def main(
     data_source.create()
 
     sample_dict = create_sample_dict(task_name, data_source, sample_id, tokenizer_op)
+    if test_h5ad_file or verbose > 2:
+        print("sample dict", sample_dict)
+    batch_dict = CollateDefault(skip_keys=CellTypeDataModule.skip_keys)([sample_dict])
 
-    batch_dict = get_predictions(nn_model, sample_dict)
+    if test_h5ad_file or verbose > 1:
+        key_to_print = ["data.query.encoder_input", "data.encoder_input_token_ids"]
+        for key in key_to_print:
+            print(f"{key}: {batch_dict[key]}")
 
+    if test_h5ad_file or verbose > 2:
+        n_zero = torch.sum(batch_dict["data.encoder_input_token_ids"] == 0).item()
+        total_length = torch.sum(batch_dict["data.encoder_input_attention_mask"]).item()
+        print(
+            f"{n_zero} unknown from {total_length} tokens ({round((n_zero*100)/total_length,2)}%)"
+        )
+
+    # run the model
+    batch_dict = get_predictions(nn_model, batch_dict=batch_dict)
     ans = process_model_output(tokenizer_op, batch_dict)
     ans = {
         k: v.detach().numpy() if isinstance(v, torch.Tensor) else v
         for k, v in ans.items()
     }
-    print(ans)
+    if test_h5ad_file or verbose:
+        print(ans)
 
 
 def process_model_output(tokenizer_op, batch_dict):
@@ -90,9 +121,9 @@ def process_model_output(tokenizer_op, batch_dict):
 
 
 def get_tokenizer_and_model(tokenizer_path, model_path, device):
-    tokenizer_op = ModularTokenizerOp.from_pretrained(
-        os.path.join(tokenizer_path, "tokenizer")
-    )
+    if tokenizer_path is None:
+        tokenizer_path = Path(model_path)
+    tokenizer_op = ModularTokenizerOp.from_pretrained(tokenizer_path)
     nn_model = Mammal.from_pretrained(
         pretrained_model_name_or_path=model_path,
     )
@@ -121,8 +152,8 @@ def create_sample_dict(
     return sample_dict
 
 
-def get_predictions(model, sample_dict):
-    batch_dict = CollateDefault(skip_keys=CellTypeDataModule.skip_keys)([sample_dict])
+def get_predictions(model, batch_dict):
+    # batch_dict = CollateDefault(skip_keys=CellTypeDataModule.skip_keys)([sample_dict])
     return model.generate(
         batch_dict,
         output_scores=True,

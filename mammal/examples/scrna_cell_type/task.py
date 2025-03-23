@@ -65,7 +65,7 @@ class CellTypeTask(MammalTask):
         return CellTypeDataModule(
             tokenizer_op=self._tokenizer_op,
             data_preprocessing=self.data_preprocessing,
-            stratify_by=["label"],
+            stratify_by_label=True,
             **self._data_module_kwargs,
         )
 
@@ -158,9 +158,8 @@ class CellTypeTask(MammalTask):
         )
         sequence_string = "[" + "][".join(sorted_genes[:input_max_seq_length]) + "]"
 
-        sample_dict[ENCODER_INPUTS_STR] = (
-            f"<@TOKENIZER-TYPE=GENE><MOLECULAR_ENTITY><MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED><{sequence_string}<EOS>"
-        )
+        encoder_prompt = f"<@TOKENIZER-TYPE=GENE><MOLECULAR_ENTITY><MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED><{sequence_string}<EOS>"
+        sample_dict[ENCODER_INPUTS_STR] = encoder_prompt
 
         tokenizer_op(
             sample_dict=sample_dict,
