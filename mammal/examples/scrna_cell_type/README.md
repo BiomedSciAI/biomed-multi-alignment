@@ -1,21 +1,33 @@
 # scRNA based cell type Annotation Prediction MAMMAL
 This directory contains code to fine-tune a MAMMAL model, as is available on [hugging face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m)
-and to predict the cell type using the fine-tuned model
+and to predict the cell type using the fine-tuned model.
+
+Also included are scripts to build an AnnData
 
 ##  Description
 ### Input for fine-tune:
-The required input for the fine-tuning is an [AnnData](https://anndata.readthedocs.io/en/stable/) file with scRNA samples where:
-* Each single cell reading is a sample
-*  The samples have genes for variables
-*  The values stored in the data part (`X` section) are counts for the gene in the sample
-*  The cell type of the sample is stored in the `obs['celltype']` observation for the sample.
+The required input for the fine-tuning is an [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad (or similar) file.
+AnnData (for **Annotated Data**) is specifically designed for matrix-like data.
+You can find explanations on its structure of and specifically AnnData for scRNA-seq data in [this AnnData tutorial](https://anndata.readthedocs.io/en/stable/tutorials/notebooks/getting-started.html).
+
+ In scRNA-seq AnnData, each row corresponds to a cell with a barcode, and each column corresponds to a gene with a gene id.  In addition to this, it may contain meta-data regarding the genes (like alternative gene symbols) or the observations (such as cell-type). `adata.X` contains the main data in a sparse cell-id by gene cell  data matrix which is typically the counts for the gene in the observation.
+
+ In this demo, the data is assumed to be in this format, and specifically:
+*  Each data observation represent the gene expression of a single cell.
+*  The observations have a barcode id stored in `adata.obs_names`
+*  The variable names for each observation are the gene symbols, stored in `anndata.var_names`
+*  The values stored in the data part (`adata.X` section) are counts for the relevant gene for the observation, and
+*  Only counts of genes are in the data vector - other variables must first be removed.
+*  The cell type of the observations, of present, are stored in the `adata.obs['celltype']`.
+
+Note that all the names of genes and cell types need to be consistent with the format/naming schema in the tokenizer.
 
 ### Input for prediction:
 Similar to the input for fine-tuning, but the cell-types observations are not needed and will be ignored if present.
 
 ## Data and data preparation
-Input needs to be saved to an AnnData file (ending with `.h5ad`) with all the names of genes and cell types consistent with the format in the tokenizer
-
+Input needs to be packed to an AnnData file (ending with `.h5ad`) as described above.
+### Data Preprocessing
 The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data preprocessing needed to convert the raw counts to the expected input.  This process consists of
  1. filtering the cells to remove cells with less then 200 different samples
  2. normalizing the total counts for all the reads of the cell to 1000
@@ -23,6 +35,8 @@ The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data 
  4. Binning (or Digitizing) the values to the
 
  See [preprocess_ann_data in pl_data_module.py](pl_data_module.py#L225) for an implementation and the details.
+
+ Note that the parameters of the preprocessing can be changed via command line arguments.
 
 
 ## Example data for this demo
@@ -43,12 +57,16 @@ The script includes instructions and code for downloading, processing and packin
 
 ## GeneFormer inspired ordered gene encoding string
 
-MAMMAL is a transformer who's input is a string of tokens.  scRNA data is typically collected as pairs of **(gene name,expression level)**.  We chose to perform this transformation by
+MAMMAL is a transformer who's input is a string of tokens.  scRNA data is typically collected as pairs of **(gene name,expression level)**.  We chose to perform this transformation from genes and counts to tokens by
 binning the expressions into (typically) 10 bins based on expression, and then sort them by bin number (from largest expression down). All the genes inside each bin are considered to be of equivalent expression levels. To create a consistent, MLM learnable output, we sort the genes within each bin lexicographically by gene name.  This can be replaced by any other arbitrary and constant gene order, as long as the ordering scheme is used in training and test.
 
 After this double sorting, the expression level (or bin number) are ignored, and the expression profile is represented by the list of gene names in this order.  This list is then used as the representation of the cell's scRNA, as inputted into the model.  For performance reasons, the string is truncated to a fixed size (500-2000 typically, there is a parameter in the config file to change this).
 
-This stage is done while reading the data, and is not part of the preprocessing.
+This process was used when pre-training the base model on scRNA data, and consistent processing should help the fine-tuning process.
+
+This sorting/tokenizing stage is done while reading the data, and is not part of the preprocessing.
+
+Here is a reference code in python for performing this double sorting process, to help understand what exactly and how this is done in the code:
 
     def convert_to_double_sorted_geneformer_sequence(anndata_object):
 
@@ -57,19 +75,17 @@ This stage is done while reading the data, and is not part of the preprocessing.
 
 
 ### Example of the double sorting and ordering:
-Assuming that the data was preprocessed and is now in standard gene names and bin numbers pairs.
+Assuming that the data was  [preprocessed](#data-preprocessing) and is now in standard gene names and bin numbers pairs.
 For this example, we will consider a sample with four genes, each paired with the corresponding bin number.
 As explained above, the genes are first sorted by the bin number (from large to small) and then within each bin the genes are sorted lexicographically by name.  Finally, the bin numbers are dripped and the genes are presented to the model as an ordered sequence.
 
 
 ||stage| **name** | **bin**  |***\\***|    |  **name** | **bin**   |***\\***|  **name** | **bin**    |***\\***|  **name** |**bin**    |
 |:-:|:-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|| | ||| | | ||
-1| input data | ABCD | 4 |***\\***|| ZZTP | **6**  | ***\\***| BRCA | 6 |***\\***|MINI | 6 |
-2|sorted by bin| ZZTP | 6 | ***\\***||   BRCA | **6** | ***\\***|MINI | 6  |***\\***|ABCD | 4
-3|sorted by name| **B**RCA | 6 | ***\\***|| **M**INI | **6**  | ***\\***| **Z**ZTP | 6 |***\\***|**A**BCD | 4
+1| input data | ABCD | 4 |***\\***|| ZZTP | 6  | ***\\***| BRCA | 6 |***\\***|MINI | 6 |
+2|sorted by bin| ZZTP | **6** | ***\\***||   BRCA | **6** | ***\\***|MINI | **6**  |***\\***|ABCD | **4**
+3|sorted by name| **B**RCA | 6 | ***\\***|| **M**INI | 6  | ***\\***| **Z**ZTP | 6 |***\\***|**A**BCD | 4
 4|bins removed|  BRCA | | || MINI |   | | ZZTP |  ||ABCD |
-
 
 
 1. The input (preprocessed) data is ***[(ABCD,4),( ZZTP,6),(BRCA,6),( MINI,6)]***
