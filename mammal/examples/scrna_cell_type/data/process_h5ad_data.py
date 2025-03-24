@@ -18,21 +18,21 @@ from mammal.examples.scrna_cell_type.pl_data_module import preprocess_ann_data
     help="name of output H5AD file",
 )
 @click.option(
-    "--min_genes",
+    "--min-genes",
     "-m",
     type=click.INT,
     help="minimal number of different genes per cell.  Used for filtering",
     default=200,
 )
 @click.option(
-    "--normalize_total",
+    "--normalize-total",
     "-n",
     type=click.FLOAT,
     help="Value to normelize the sum or counts to",
     default=1000.0,
 )
 @click.option(
-    "--num_bins",
+    "--num-bins",
     "-b",
     type=click.INT,
     help="number of expression bins to use",

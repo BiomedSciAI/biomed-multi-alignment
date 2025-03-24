@@ -72,21 +72,26 @@ from scipy.io import mmread
     help="name of output H5AD file.  default is adding '_preprocessed' to the input file",
 )
 @click.option(
-    "--min_genes",
+    "--raw-data-dir",
+    help="dirname with barcodes.tsv, genes.tsv, and matrix.mtx files",
+    default="filtered_matrices_mex/hg19",
+)
+@click.option(
+    "--min-genes",
     "-m",
     type=click.INT,
     help="minimal number of different genes per cell.  Used for filtering in pre-processing",
     default=200,
 )
 @click.option(
-    "--normalize_total",
+    "--normalize-total",
     "-n",
     type=click.FLOAT,
     help="Value for normalizing the sum of counts in preprocessing",
     default=1000.0,
 )
 @click.option(
-    "--num_bins",
+    "--num-bins",
     "-b",
     type=click.INT,
     help="number of expression bins to use in pre-processing",
@@ -105,16 +110,17 @@ from scipy.io import mmread
 def main(
     input_h5ad_file: str,
     output_h5ad_file: str,
+    raw_data_dir: os.PathLike,
     min_genes: int = 200,
     normalize_total: float = 1000,
     num_bins: int = 10,
     pre_process: bool = True,
     verbose: bool = False,
 ):
+    # Unless a raw h5ad file is given, one needs to be constructed from it's parts
     if input_h5ad_file is None:
-        # in this case we need to build the original anndata file
         raw_h5ad_file = "Zheng_68k.h5ad"
-        raw_data_dir = Path("filtered_matrices_mex/hg19")
+        raw_data_dir = Path(raw_data_dir)
         barcode_file = raw_data_dir / "barcodes.tsv"
         genes_file = raw_data_dir / "genes.tsv"
         matrix_file = raw_data_dir / "matrix.mtx"
@@ -161,8 +167,17 @@ def main(
 
     if pre_process:
         # if we don't have an output file name, create it by adding "_preprocessed" between the input file name and the file extension
+        preprocessing_kwargs = {
+            "--min-genes": min_genes,
+            "--normalize-total": normalize_total,
+            "--num-bins": num_bins,
+        }
+
         pre_process_anndata_file(
-            input_h5ad_file, output_h5ad_file=output_h5ad_file, verbose=verbose
+            input_h5ad_file,
+            output_h5ad_file=output_h5ad_file,
+            preprocessing_kwargs=preprocessing_kwargs,
+            verbose=verbose,
         )
 
 
@@ -173,7 +188,21 @@ def create_anndata_from_csv(
     matrix_file,
     labels_file="zheng17_bulk_lables.txt",
     verbose=False,
-) -> str:
+) -> os.PathLike:
+    """Construct an h5ad file (an anndata object dump) from its components.
+
+
+    Args:
+        raw_h5ad_file (os.PathLike): name of file to save constructed AnnData into
+        barcode_file (os.PathLike): this file holds the mapping from the sample index to the cell identifier
+        genes_file (os.PathLike): Mapping from feature index to gene name
+        matrix_file (os.PathLike): The actual data, is (sparse) matrix form.
+        labels_file (os.PathLike, optional): File containing the cell types for each file. Defaults to "zheng17_bulk_lables.txt".
+        verbose (bool, optional): verbose output. Defaults to False.
+
+    Returns:
+        os.PathLike: name of h5ad file
+    """
 
     #  You should now have a directory called `filtered_matrices_mex/hg19`
     # with the following files
@@ -215,7 +244,9 @@ def create_anndata_from_csv(
     return raw_h5ad_file
 
 
-def pre_process_anndata_file(input_h5ad_file, output_h5ad_file, verbose=False):
+def pre_process_anndata_file(
+    input_h5ad_file, output_h5ad_file, preprocessing_kwargs={}, verbose=False
+):
     if output_h5ad_file is None:
         file_name, file_extension = os.path.splitext(input_h5ad_file)
         output_h5ad_file = file_name + "_preprocessed" + file_extension
@@ -226,19 +257,7 @@ def pre_process_anndata_file(input_h5ad_file, output_h5ad_file, verbose=False):
         file_name, file_extension = os.path.splitext(input_h5ad_file)
         output_h5ad_file = file_name + "_preprocessed" + file_extension
 
-    # The code requires a simple preprocessing stage to get it to a standard form.  [../process_h5ad_data.py] is a script that can be used to run the preprocessing stage.
-
-    # The parameters of the processing can be controlled from the command line.  Use
-
-    # ! python process_h5ad_data.py --help
-
-    # for a list of available parameters
-
-    # This script can be used to filter and process the AnnData
-    # The output of this is stored in `Zheng_68k_preprocessed.h5ad`, and us used by the config to run the model
-
-    # > python process_h5ad_data.py --input-h5ad-file Zheng_68k.h5ad --output-h5ad-file Zheng_68k_preprocessed.h5ad
-    # The annData file should ready in the data directory.
+    # The code requires a simple preprocessing stage to get it to a standard form (counts).  [../process_h5ad_data.py] is a script that can be used to run the preprocessing stage.
 
     if verbose:
         print(
@@ -252,14 +271,11 @@ def pre_process_anndata_file(input_h5ad_file, output_h5ad_file, verbose=False):
         input_h5ad_file,
         "--output-h5ad-file",
         output_h5ad_file,
+        "",
     ]
-
-    if verbose:
-        print(
-            f"The preprocessing command is \n{' '.join(anndata_preprocessing_arguments)}"
-        )
-
-    subprocess.run(anndata_preprocessing_arguments)
+    for key, value in preprocessing_kwargs.items():
+        anndata_preprocessing_arguments.append([f"--{key}", value])
+    subprocess.run(anndata_preprocessing_arguments, check=True)
 
     # !ls -sh1 *.h5ad
     # ```

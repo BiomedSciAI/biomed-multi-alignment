@@ -163,7 +163,7 @@ def load_datasets(
         data_path = Path(__file__).parent / data_path
     # read files
     anndata_object = anndata.read_h5ad(data_path)
-    # Without this the anndata on file is assumed to be post preprocessing.
+    # If the anndata files need to be post preprocessed, uncomment this line.
     # preprocess_ann_data(anndata_object)
     anndata_dict = {}
     anndata_dict["all_data"] = anndata_object
