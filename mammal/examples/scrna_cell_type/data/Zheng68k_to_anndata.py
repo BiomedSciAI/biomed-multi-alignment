@@ -1,46 +1,16 @@
-# # script to pack zheng68k data from x10genomics into an AnnData (h5ad) file.
+# script to pack zheng68k data downloaded from x10genomics into an AnnData/h5ad file.
 
 # This example follows [Zheng]() for identification of white blood cell types from single cell RNA expression data.
 
 
 # ## Outline of process
-# The finetune process requires the input data to be in AnnData (h5ad) format with the cell types
+# The finetune process requires the input data to be in scRNA-sec AnnData format (saved as an h5ad file) with the cell types
 # as labels. If the data is not packed as AnnData, as is the case when downloading from the
 # 10xGenomics site as explained below, it need to first be packed into one and saved to the disk.
 
-# Once the data is in AnnData format, it needs to be canonized via data and variable name transformations.
-# After the transformations the filtered and canonized data may be saved again in AnnData format or used directly.  This data can be used by the training process.
 
-# In the training process, each sample is transformed into a GeneFormer like ordered list of genes, which is done by sorting all the genes by binned expression level and within each bin alphabetically by the gene name (as it is used in the tokenizer).
-# This is done inside the task.process_model_output method, together with input preparations and tokenizations.
-
-
-# ## preprocessing data transformations
-
-# * Filter out cell with less then 200 active genes
-
-#         scanpy.pp.filter_cells(anndata_object,min_genes=200)
-
-
-# * Normelize the sum of counts for each cell to a constant (1000)
-
-#         scanpy.pp.normalize_total(anndata_object,1000.)
-
-
-# * Move to log space (note,the data prior to this step will be in the range 0-10 so scanpy may issue a warning that the data has allready beed log-scaled)
-
-#         scanpy.pp.log1p(anndata_object,base=2)
-
-
-# * split the full range of values into bins and digitize the values
-
-#         bins=np.linspace(anndata_object.X.data.min(), anndata_object.X.max(),num=10)
-#         anndata_object.X.data=np.digitize(anndata_object.X.data, bins)
-
-#     Note that this was done over all the data, but that is not likely to cause any bleeding from the test sets
-
-
-# This notebook assumes that it is run from the `bmfm-mammal-release/mammal/examples/scrna_cell_type` directory ("the current directory").
+# This script assumes that it is run from the data directory,
+# which is typically `bmfm-mammal-release/mammal/examples/scrna_cell_type/data`
 
 import os
 import subprocess
@@ -51,11 +21,15 @@ import click
 import pandas as pd
 from scipy.io import mmread
 
-# this script is meant to be run from the `data` directory under the scrna_cell_type example directory.
-
 ### Obtaining the source data:
-# The main data is available online, for example in the [10xGenomics](https://www.10xgenomics.com/) cite.  The labels are based on the data in [LINK](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0)
-# From this site download the file `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz` and place it in this directory.
+# The main data is available online, for example in the [10xGenomics](https://www.10xgenomics.com/) cite.
+# The labels are based on the data in [LINK](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0)
+# From this site download the file `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz` and place it in the data directory.
+
+
+DEFULT_LAVELS_FILE = (
+    "zheng17_bulk_lables.txt"  # yes, the original file is named this way.
+)
 
 
 @click.command()
@@ -72,9 +46,14 @@ from scipy.io import mmread
     help="name of output H5AD file.  default is adding '_preprocessed' to the input file",
 )
 @click.option(
-    "--raw-data-dir",
-    help="dirname with barcodes.tsv, genes.tsv, and matrix.mtx files",
-    default="filtered_matrices_mex/hg19",
+    "--data-dir",
+    help="dirname for the downloaded and constructed data files",
+    default=".",
+)
+@click.option(
+    "--labels_file",
+    "-l",
+    default=DEFULT_LAVELS_FILE,
 )
 @click.option(
     "--min-genes",
@@ -110,23 +89,25 @@ from scipy.io import mmread
 def main(
     input_h5ad_file: str,
     output_h5ad_file: str,
-    raw_data_dir: os.PathLike,
+    data_dir: os.PathLike,
+    labels_file: os.PathLike,
     min_genes: int = 200,
     normalize_total: float = 1000,
     num_bins: int = 10,
     pre_process: bool = True,
     verbose: bool = False,
 ):
-    # Unless a raw h5ad file is given, one needs to be constructed from it's parts
+    # all work is done in the data dir
+    os.chdir(data_dir)
+    # Unless a raw h5ad file is given, one needs to be constructed from its raw parts
     if input_h5ad_file is None:
         raw_h5ad_file = "Zheng_68k.h5ad"
-        raw_data_dir = Path(raw_data_dir)
-        barcode_file = raw_data_dir / "barcodes.tsv"
-        genes_file = raw_data_dir / "genes.tsv"
-        matrix_file = raw_data_dir / "matrix.mtx"
-        labels_file = "zheng17_bulk_lables.txt"
+        raw_data_subdir = Path("filtered_matrices_mex/hg19")
+        barcode_file = raw_data_subdir / "barcodes.tsv"
+        genes_file = raw_data_subdir / "genes.tsv"
+        matrix_file = raw_data_subdir / "matrix.mtx"
 
-        if not raw_data_dir.exists():
+        if not raw_data_subdir.exists():
             gzip_file_name = "fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz"
 
             # check if the file exists
@@ -135,16 +116,18 @@ def main(
                     f"please download the file {gzip_file_name} from https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0 into this data directory and then run this script again from that directory"
                 )
                 raise FileNotFoundError(
-                    f"Both the {gzip_file_name} and the raw data directory {raw_data_dir} extracted from it not found under the current directory"
+                    f"Both the {gzip_file_name} and the raw data directory {raw_data_subdir} extracted from it not found under the current directory"
                 )
             else:
                 if verbose:
                     print(f"extracting files from  {gzip_file_name}")
                 subprocess.run(["tar", "xvzf", gzip_file_name])
 
-        if labels_file is not None:  # if we do not want to add lables
+        if labels_file is not None:  # if we do not want to add labels
             if not os.path.exists(labels_file):
-                if labels_file == "zheng17_bulk_lables.txt":
+                if (
+                    labels_file == DEFULT_LAVELS_FILE
+                ):  # special case - we can download this file if needed.
                     labels_file_url = "https://raw.githubusercontent.com/scverse/scanpy_usage/refs/heads/master/170503_zheng17/data/zheng17_bulk_lables.txt"
                     if verbose:
                         print(f"Missing cell-type-labels file {labels_file}")
@@ -186,7 +169,7 @@ def create_anndata_from_csv(
     barcode_file,
     genes_file,
     matrix_file,
-    labels_file="zheng17_bulk_lables.txt",
+    labels_file,
     verbose=False,
 ) -> os.PathLike:
     """Construct an h5ad file (an anndata object dump) from its components.
@@ -197,7 +180,7 @@ def create_anndata_from_csv(
         barcode_file (os.PathLike): this file holds the mapping from the sample index to the cell identifier
         genes_file (os.PathLike): Mapping from feature index to gene name
         matrix_file (os.PathLike): The actual data, is (sparse) matrix form.
-        labels_file (os.PathLike, optional): File containing the cell types for each file. Defaults to "zheng17_bulk_lables.txt".
+        labels_file (os.PathLike, optional): File containing the cell types for each file.
         verbose (bool, optional): verbose output. Defaults to False.
 
     Returns:
@@ -233,9 +216,9 @@ def create_anndata_from_csv(
 
     if labels_file is not None:
         # cell types (this is actualy just one column)
-        cell_type_lables = pd.read_csv(labels_file, header=None, sep="\t")
+        cell_type_labels = pd.read_csv(labels_file, header=None, sep="\t")
         # use cell types as labels for the samples
-        anndata_object.obs["celltype"] = cell_type_lables.squeeze().to_numpy()
+        anndata_object.obs["celltype"] = cell_type_labels.squeeze().to_numpy()
         # Save result anndata object to disk
     anndata_object.write_h5ad(raw_h5ad_file)
 
@@ -247,6 +230,22 @@ def create_anndata_from_csv(
 def pre_process_anndata_file(
     input_h5ad_file, output_h5ad_file, preprocessing_kwargs={}, verbose=False
 ):
+    """
+    Once the data is in AnnData format, it needs to be canonized via data and variable name transformations.
+    After the transformations the filtered and canonized data may be saved again in AnnData format or used directly.
+    After the transformation, the data can be used by the training process.
+
+    [../process_h5ad_data.py] is the script that is used to run the preprocessing stage.
+
+    In the training process, each sample is transformed into a GeneFormer like ordered list of genes, which is done by sorting all the genes by binned expression level and within each bin alphabetically by the gene name (as it is used in the tokenizer).
+    This is done inside the task.process_model_output method, together with input preparations and tokenizations.
+
+    Args:
+        input_h5ad_file (_type_): name of standard AnnData file.  None if file needs to be created.
+        output_h5ad_file (_type_): name of AnnData file to save preprocessed output into
+        preprocessing_kwargs (dict, optional): parameters for preprocessing script. Defaults to {}.
+        verbose (bool, optional): be verbose. Defaults to False.
+    """
     if output_h5ad_file is None:
         file_name, file_extension = os.path.splitext(input_h5ad_file)
         output_h5ad_file = file_name + "_preprocessed" + file_extension
@@ -256,8 +255,6 @@ def pre_process_anndata_file(
     if output_h5ad_file is None:
         file_name, file_extension = os.path.splitext(input_h5ad_file)
         output_h5ad_file = file_name + "_preprocessed" + file_extension
-
-    # The code requires a simple preprocessing stage to get it to a standard form (counts).  [../process_h5ad_data.py] is a script that can be used to run the preprocessing stage.
 
     if verbose:
         print(
@@ -276,12 +273,6 @@ def pre_process_anndata_file(
     for key, value in preprocessing_kwargs.items():
         anndata_preprocessing_arguments.append([f"--{key}", value])
     subprocess.run(anndata_preprocessing_arguments, check=True)
-
-    # !ls -sh1 *.h5ad
-    # ```
-    # 917616 Zheng_68k.h5ad
-    # 886288 Zheng_68k_preprocessed.h5ad
-    # ```
 
     if verbose:
         print(

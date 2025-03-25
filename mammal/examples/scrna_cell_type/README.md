@@ -32,8 +32,8 @@ The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data 
  1. filtering the cells to remove cells with less then 200 different samples
  2. normalizing the total counts for all the reads of the cell to 1000
  3. passing the counts through `log(value+1)` which shifts the counts to the range of zero to nine.
- 4. Binning (or Digitizing) the values to the
-
+ 4. Binning (or Digitizing) the transformed counts into n bins numbered 0,1,..,n-1
+    Binning is done uniformly on the full range of the transformed counts.
  See [preprocess_ann_data in pl_data_module.py](pl_data_module.py#L225) for an implementation and the details.
 
  Note that the parameters of the preprocessing can be changed via command line arguments.
