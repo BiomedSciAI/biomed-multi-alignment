@@ -6,13 +6,13 @@ Also included are scripts to build an AnnData
 
 ##  Description
 ### Input for fine-tune:
-The required input for the fine-tuning is an [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad (or similar) file.
-AnnData (for **Annotated Data**) is specifically designed for matrix-like data.
+The required input for the fine-tuning is an scRNA-seq [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad (or similar) file.
+AnnData (for **Annotated Data**) is specifically designed for matrix-like data with meta data on both the samples and the variables.
 You can find explanations on its structure of and specifically AnnData for scRNA-seq data in [this AnnData tutorial](https://anndata.readthedocs.io/en/stable/tutorials/notebooks/getting-started.html).
 
  In scRNA-seq AnnData, each row corresponds to a cell with a barcode, and each column corresponds to a gene with a gene id.  In addition to this, it may contain meta-data regarding the genes (like alternative gene symbols) or the observations (such as cell-type). `adata.X` contains the main data in a sparse cell-id by gene cell  data matrix which is typically the counts for the gene in the observation.
 
- In this demo, the data is assumed to be in this format, and specifically:
+ In this demo, the data is assumed to be in this standard format, and specifically:
 *  Each data observation represent the gene expression of a single cell.
 *  The observations have a barcode id stored in `adata.obs_names`
 *  The variable names for each observation are the gene symbols, stored in `anndata.var_names`
