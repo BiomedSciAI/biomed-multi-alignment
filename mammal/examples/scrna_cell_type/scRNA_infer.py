@@ -1,7 +1,9 @@
 from pathlib import Path
+from pprint import pprint
 
 import anndata
 import click
+import numpy as np
 import torch
 from anndata_op import OpReadAnnData
 from fuse.data.datasets.dataset_default import DatasetDefault
@@ -65,12 +67,16 @@ def main(
     test_h5ad_file: bool,
     device: str,
 ):
+    try:
+        anndata_object = anndata.read_h5ad(h5ad_file_path)
+    except Exception as e:
+        raise ValueError(
+            f"Failed to read {h5ad_file_path} as a serialized AnnData "
+        ) from e
 
     tokenizer_op, nn_model = get_tokenizer_and_model(tokenizer_path, model_path, device)
 
     # convert to MAMMAL style
-
-    anndata_object = anndata.read_h5ad(h5ad_file_path)
 
     dynamic_pipeline = PipelineDefault(
         "cell_type",
@@ -86,7 +92,26 @@ def main(
 
     sample_dict = create_sample_dict(task_name, data_source, sample_id, tokenizer_op)
     if test_h5ad_file or verbose > 2:
-        print("sample dict", sample_dict)
+        print("/n/n sample dict:/n")
+        pprint(dict(sample_dict))
+        if test_h5ad_file and "data.label" not in sample_dict:
+            raise ValueError(
+                "sample_dict['data.label'] is missing - data can not be used for training"
+            )
+        unique_values, counts = np.unique(
+            sample_dict["scrna.scrna"].data, return_counts=True
+        )
+        n_values = len(unique_values)
+        if n_values > 11:
+            print("-" * 60)
+            print(
+                f"The data has {n_values} different expression bins which is typical for data that did not pass though the preprocessing."
+            )
+            # Print the results
+            for value, count in zip(unique_values, counts):
+                print(f"Value {value} appears {count} times")
+            print("\n" * 4)
+
     batch_dict = CollateDefault(skip_keys=CellTypeDataModule.skip_keys)([sample_dict])
 
     if test_h5ad_file or verbose > 1:
