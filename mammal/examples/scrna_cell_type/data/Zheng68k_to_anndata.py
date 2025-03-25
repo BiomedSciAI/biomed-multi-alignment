@@ -121,7 +121,7 @@ def main(
             else:
                 if verbose:
                     print(f"extracting files from  {gzip_file_name}")
-                subprocess.run(["tar", "xvzf", gzip_file_name])
+                subprocess.run(["tar", "xvzf", gzip_file_name], check=True)
 
         if labels_file is not None:  # if we do not want to add labels
             if not os.path.exists(labels_file):
@@ -132,7 +132,7 @@ def main(
                     if verbose:
                         print(f"Missing cell-type-labels file {labels_file}")
                         print(f"downloading it from {labels_file_url}")
-                    subprocess.run(["wget", labels_file_url])
+                    subprocess.run(["wget", labels_file_url], check=True)
                     if verbose:
                         print("downloaded")
                 else:
