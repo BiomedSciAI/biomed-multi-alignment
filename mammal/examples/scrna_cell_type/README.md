@@ -37,7 +37,7 @@ The code uses the `"cell_type"` observation as the sample's class, so at least f
 Note that all the names of genes and cell types need to be consistent with the format/naming schema in the tokenizer.
 
 ### Filtration of the cells prior to training:
-As is common when working with such data, the cells are filtered to remove partial and suspicious reads.  We used two filters to achieve this - removing cells with a small number of different RNAs in the read, and removing cells with very shallow reads.  See [Filtration and processing](#filtering-and-processing-refrence-script) section below for our reference implementation and the parameters we used.  Depending on your data, you may want to modify this process.
+As is common when working with such data, the cells are filtered to remove partial and suspicious reads.  We used two filters to achieve this - removing cells with a small number of different RNAs in the read, and removing cells with very shallow reads.  See [Filtration and processing](#filtering-and-processing-reference-script) section below for our reference implementation and the parameters we used.  Depending on your data, you may want to modify this process.
 
 ### Digitizing the counts
 As is explained in the [encoding section below](#geneformer-inspired-ordered-gene-encoding-string), the encoding of the cell reads for the model
@@ -46,7 +46,7 @@ The bins are assumed to be numbered `0,1,...,n-1' where smaller bin number repre
 
 The code assumes that the data has been filtered as needs and then digitized and saved into an h5ad file with the bin numbers *replacing* the counts in the `data.X` matrix.
 
-### Filtering and processing refrence script
+### Filtering and processing reference script
 The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data preprocessing as described above.  This process consists of
  1. filtering the cells to remove cells with less then 200 different samples
  2. normalizing the total counts for all the reads of the cell to 1000
@@ -128,6 +128,8 @@ In this example we will fine-tune on cell type by doing the following:
 
     ```cd biomed-multi-alignment & pip install -e '.[examples]'```
 
+### download example data
+
 2.  From the [10xgenomics website](https://www.10xgenomics.com), **Download**
 
     `fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz`
@@ -135,7 +137,7 @@ In this example we will fine-tune on cell type by doing the following:
     which can be found at [Fresh 68k PBMCs (Donor A) dataset](https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0)
     under **"Output and supplemental files -> Gene / cell matrix (filtered)"**
 
-
+### pack Zheng data into AnnData file
 3. **Place** file in the data directory
 
     **biomed-multi-alignment/mammal/examples/scrna_cell_type/data**
@@ -144,15 +146,27 @@ In this example we will fine-tune on cell type by doing the following:
 
     ```python Zheng68k_to_anndata.py```
 
-    This script downloads the label builds an AnnData file from the data and l
-
-    This will produce a file called `Zheng_68k_preprocessed.h5ad` in the data directory.
+    This script downloads the label and builds an AnnData file from the different data files, and finally it saves the file `Zheng_68k.h5ad` which is a standard scRAN-sec AnnData file.
 
     Use `python Zheng68k_to_anndata.py --help` to see the possible command line options which control the pre-processing process.
 
-5. Edit [biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml](biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml) if needed to change the parameters of the training.  The default setup should work fine.
+### from standard scRNA-sec AnnData to MAMMAL
 
-6. return to the top directory **`biomed-multi-alignment`** of the project
+5.  run the `data/process_h5ad_data.py` script on the standard AnnData file.
+    **Note: this is done automatically as part of the `Zheng68k_to_anndata.py` script, so it does not need to be done manually if this data is used.
+
+    ```python ./process_h5ad_data.py -i Zheng_68k.h5ad -o Zheng_68k_preprocessed.h5ad```
+
+    This will produce a file called `Zheng_68k_preprocessed.h5ad` in the data directory.
+
+    Use `python  ./process_h5ad_data.py --help` to see the possible command line options which control the pre-processing process.
+
+
+### run the file-tune process
+
+6. Edit [biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml](biomed-multi-alignment/mammal/examples/scrna_cell_type/config.yaml) if needed to change the parameters of the training.  The default setup should work fine.
+
+7. return to the top directory **`biomed-multi-alignment`** of the project
     and run the main finetune program:
 
     ```% python ./mammal/main_finetune.py "--config-name=config.yaml" "--config-path=examples/scrna_cell_type"```
