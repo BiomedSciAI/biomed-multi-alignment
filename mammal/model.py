@@ -497,12 +497,14 @@ class Mammal(ModelHubMixin, torch.nn.Module):
 
                 if config.use_lora and pretrained_has_lora_weights:
                     model.t5_model = get_lora_model(model.t5_model)
+                    model.load_state_dict(state_dict, strict=strict)
 
-                # Inject weights to model instance
-                model.load_state_dict(state_dict, strict=strict)
-
-                if config.use_lora and not pretrained_has_lora_weights:
+                elif config.use_lora and not pretrained_has_lora_weights:
+                    model.load_state_dict(state_dict, strict=strict)
                     model.t5_model = get_lora_model(model.t5_model)
+
+                else:
+                    model.load_state_dict(state_dict, strict=strict)
 
         elif os.path.isdir(pretrained_model_name_or_path):
             print(
