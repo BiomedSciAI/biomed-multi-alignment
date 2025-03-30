@@ -34,7 +34,7 @@ class CellTypeDataModule(pl.LightningDataModule):
         data_preprocessing: Callable,
         train_dl_kwargs: dict,
         valid_dl_kwargs: dict,
-        label_name="celltype",
+        label_name="cell_type",
         input_max_seq_length: int = 500,
         encoder_input_max_seq_len: int = 512,
         labels_max_seq_len: int = 20,
@@ -194,7 +194,9 @@ def load_datasets(
 
 
 def load_cell_type_mapping(
-    mapping_key="celltype", mapping_value="cell_type_ontology_term_id", cell_type_mapping="cell_type_mapping.csv"
+    mapping_key="cell_type",
+    mapping_value="cell_type_ontology_term_id",
+    cell_type_mapping="cell_type_mapping.csv",
 ):
     """
     Load metadata_extra_mapping.csv from the given dataset metadata folder,
@@ -224,10 +226,10 @@ def preprocess_ann_data(
     min_genes: int = 200,
     normalize_total: float = 1000,
     num_bins: int = 10,
-    cell_type: str="celltype"
+    cell_type: str = "cell_type",
 ):
     """run preprocessing steps on anndata object
-    assumes that the anndata object has a standard structure with counts per cell X gene, and cell type annotations in obs["celltype"].
+    assumes that the anndata object has a standard structure with counts per cell X gene, and cell type annotations in obs["cell_type"].
 
     steps include:
         - translate cell types to ontology term ids
@@ -257,8 +259,7 @@ def preprocess_ann_data(
     bins = np.linspace(
         anndata_object.X.data.min(), anndata_object.X.max(), num=num_bins + 1
     )
-Note that we change the reading values values into their bins
+    # Note that we change the reading values into their bins number in the main matrix.
     anndata_object.X.data = np.digitize(anndata_object.X.data, bins)
 
     return anndata_object
-

@@ -5,30 +5,49 @@ and to predict the cell type using the fine-tuned model.
 Also included are scripts to build an AnnData
 
 ##  Description
-### Input for fine-tune:
-The required input for the fine-tuning is an scRNA-seq [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad (or similar) file.
+### Input structure:
+The required input is an scRNA-seq [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad (or similar) file.
 AnnData (for **Annotated Data**) is specifically designed for matrix-like data with meta data on both the samples and the variables.
 You can find explanations on its structure of and specifically AnnData for scRNA-seq data in [this AnnData tutorial](https://anndata.readthedocs.io/en/stable/tutorials/notebooks/getting-started.html).
 
+#### Standard AnnData structure for scRNA-seq:
  In scRNA-seq AnnData, each row corresponds to a cell with a barcode, and each column corresponds to a gene with a gene id.  In addition to this, it may contain meta-data regarding the genes (like alternative gene symbols) or the observations (such as cell-type). `adata.X` contains the main data in a sparse cell-id by gene cell  data matrix which is typically the counts for the gene in the observation.
 
- In this demo, the data is assumed to be in this standard format, and specifically:
+This translates into the following:
 *  Each data observation represent the gene expression of a single cell.
 *  The observations have a barcode id stored in `adata.obs_names`
 *  The variable names for each observation are the gene symbols, stored in `anndata.var_names`
 *  The values stored in the data part (`adata.X` section) are counts for the relevant gene for the observation, and
-*  Only counts of genes are in the data vector - other variables must first be removed.
-*  The cell type of the observations, of present, are stored in the `adata.obs['celltype']`.
 
-Note that all the names of genes and cell types need to be consistent with the format/naming schema in the tokenizer.
-
-### Input for prediction:
-Similar to the input for fine-tuning, but the cell-types observations are not needed and will be ignored if present.
 
 ## Data and data preparation
 Input needs to be packed to an AnnData file (ending with `.h5ad`) as described above.
-### Data Preprocessing
-The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data preprocessing needed to convert the raw counts to the expected input.  This process consists of
+
+### Additional AnnData requirements specific to this demo:
+The standard AnnData scRNA-seq data format requires some small changes to fit the code.
+The code assumes that *all* the variables are gene counts, but AnnData allows other variables, so
+
+*  Only counts of genes are in the data vector - other variables must first be removed.
+
+The code uses the `"cell_type"` observation as the sample's class, so at least for training:
+
+*  The cell type of the observations are stored in the `adata.obs['celltype']` observation.
+
+
+Note that all the names of genes and cell types need to be consistent with the format/naming schema in the tokenizer.
+
+### Filtration of the cells prior to training:
+As is common when working with such data, the cells are filtered to remove partial and suspicious reads.  We used two filters to achieve this - removing cells with a small number of different RNAs in the read, and removing cells with very shallow reads.  See [Filtration and processing](#filtering-and-processing-refrence-script) section below for our reference implementation and the parameters we used.  Depending on your data, you may want to modify this process.
+
+### Digitizing the counts
+As is explained in the [encoding section below](#geneformer-inspired-ordered-gene-encoding-string), the encoding of the cell reads for the model
+requires that the counts for each gene will be **replaced** with a digitized version of the value, which corresponds to the bin the value falls into.
+The bins are assumed to be numbered `0,1,...,n-1' where smaller bin number represents a bigger count.
+
+The code assumes that the data has been filtered as needs and then digitized and saved into an h5ad file with the bin numbers *replacing* the counts in the `data.X` matrix.
+
+### Filtering and processing refrence script
+The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data preprocessing as described above.  This process consists of
  1. filtering the cells to remove cells with less then 200 different samples
  2. normalizing the total counts for all the reads of the cell to 1000
  3. passing the counts through `log(value+1)` which shifts the counts to the range of zero to nine.
@@ -38,6 +57,7 @@ The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data 
 
  Note that the parameters of the preprocessing can be changed via command line arguments.
 
+This script is used to convert from an `input.h4ad` file to a `processed.h4ad` file, with the cells that passed the filters and the binned data.
 
 ## Example data for this demo
 

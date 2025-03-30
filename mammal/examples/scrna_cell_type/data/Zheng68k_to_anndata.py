@@ -4,10 +4,10 @@
 
 
 # ## Outline of process
-# The finetune process requires the input data to be in scRNA-sec AnnData format (saved as an h5ad file) with the cell types
+# The finetune process requires the input data to be in scRNA-sec AnnData format (saved as an h5ad file) with cell types
 # as labels. If the data is not packed as AnnData, as is the case when downloading from the
 # 10xGenomics site as explained below, it need to first be packed into one and saved to the disk.
-
+# cell types, if present, should be stored in the `adata.obs['cell_type']` observation.
 
 # This script assumes that it is run from the data directory,
 # which is typically `bmfm-mammal-release/mammal/examples/scrna_cell_type/data`
@@ -31,8 +31,9 @@ DEFULT_LAVELS_FILE = (
     "zheng17_bulk_lables.txt"  # yes, the original file is named this way.
 )
 GZIP_FILE_NAME = "fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz"
-RAW_H5AD_FILE= "Zheng_68k.h5ad"
+RAW_H5AD_FILE = "Zheng_68k.h5ad"
 RAW_DATA_SUBDIR = Path("filtered_matrices_mex/hg19")
+
 
 @click.command()
 @click.option(
@@ -107,21 +108,20 @@ def main(
         genes_file = RAW_DATA_SUBDIR / "genes.tsv"
         matrix_file = RAW_DATA_SUBDIR / "matrix.mtx"
 
-        if not raw_data_subdir.exists():
-            
+        if not RAW_DATA_SUBDIR.exists():
 
             # check if the file exists
-            if not os.path.exists(GZIP_FILE_ NAME):
+            if not os.path.exists(GZIP_FILE_NAME):
                 print(
-                    f"please download the file {gzip_file_name} from https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0 into this data directory and then run this script again from that directory"
+                    f"please download the file {GZIP_FILE_NAME} from https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0 into this data directory and then run this script again from that directory"
                 )
                 raise FileNotFoundError(
-                    f"Both the {gzip_file_name} and the raw data directory {raw_data_subdir} extracted from it not found under the current directory"
+                    f"Both the {GZIP_FILE_NAME} and the raw data directory {RAW_DATA_SUBDIR} extracted from it not found under the current directory"
                 )
             else:
                 if verbose:
-                    print(f"extracting files from  {gzip_file_name}")
-                subprocess.run(["tar", "xvzf", gzip_file_name], check=True)
+                    print(f"extracting files from  {GZIP_FILE_NAME}")
+                subprocess.run(["tar", "xvzf", GZIP_FILE_NAME], check=True)
 
         if labels_file is not None:  # if we do not want to add labels
             if not os.path.exists(labels_file):
@@ -138,7 +138,7 @@ def main(
                 else:
                     raise FileNotFoundError("please supply labels file")
         input_h5ad_file = create_anndata_from_csv(
-            raw_h5ad_file,
+            input_h5ad_file,
             barcode_file,
             genes_file,
             matrix_file,
@@ -209,7 +209,7 @@ def create_anndata_from_csv(
         # cell types (this is actualy just one column)
         cell_type_labels = pd.read_csv(labels_file, header=None, sep="\t")
         # use cell types as labels for the samples
-        anndata_object.obs["celltype"] = cell_type_labels.squeeze().to_numpy()
+        anndata_object.obs["cell_type"] = cell_type_labels.squeeze().to_numpy()
         # Save result anndata object to disk
     anndata_object.write_h5ad(raw_h5ad_file)
 
