@@ -57,7 +57,7 @@ The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data 
 
  Note that the parameters of the preprocessing can be changed via command line arguments.
 
-This script is used to convert from an `input.h4ad` file to a `processed.h4ad` file, with the cells that passed the filters and the binned data.
+This script is used to convert from an `input.h5ad` file to a `processed.h5ad` file, with the cells that passed the filters and the binned data.
 
 ## Example data for this demo
 
@@ -172,3 +172,15 @@ In this example we will fine-tune on cell type by doing the following:
     ```% python ./mammal/main_finetune.py "--config-name=config.yaml" "--config-path=examples/scrna_cell_type"```
 
 When this is done your model should be fine-tuned for the task
+
+
+## Inference
+Once a fine-tuned model is ready, inference can be done using the `scRNA_infer.py` script:
+
+```python scRNA_infer.py --model-path [model path] --h5ad-file-path [data file] -s [sample id]```
+
+This will print the result of the inference, including cell-type name and token id and the score (both normalized and unnormalized).
+
+## Trouble Shooting
+The inference script can be used to identify problems with the data.  Increase verbose level by specifying `-v`, `-vv` or even `-vvv` command line options.  This will print additional intermediate objects like the input data and the prompts.
+You may also use `--test-h5ad-file` to run additional diagnostics on the h5ad file and the specific requirements needed to run MAMMAL on it.
