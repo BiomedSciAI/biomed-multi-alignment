@@ -30,7 +30,9 @@ from scipy.io import mmread
 DEFULT_LAVELS_FILE = (
     "zheng17_bulk_lables.txt"  # yes, the original file is named this way.
 )
-
+GZIP_FILE_NAME = "fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz"
+RAW_H5AD_FILE= "Zheng_68k.h5ad"
+RAW_DATA_SUBDIR = Path("filtered_matrices_mex/hg19")
 
 @click.command()
 @click.option(
@@ -101,17 +103,15 @@ def main(
     os.chdir(data_dir)
     # Unless a raw h5ad file is given, one needs to be constructed from its raw parts
     if input_h5ad_file is None:
-        raw_h5ad_file = "Zheng_68k.h5ad"
-        raw_data_subdir = Path("filtered_matrices_mex/hg19")
-        barcode_file = raw_data_subdir / "barcodes.tsv"
-        genes_file = raw_data_subdir / "genes.tsv"
-        matrix_file = raw_data_subdir / "matrix.mtx"
+        barcode_file = RAW_DATA_SUBDIR / "barcodes.tsv"
+        genes_file = RAW_DATA_SUBDIR / "genes.tsv"
+        matrix_file = RAW_DATA_SUBDIR / "matrix.mtx"
 
         if not raw_data_subdir.exists():
-            gzip_file_name = "fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices.tar.gz"
+            
 
             # check if the file exists
-            if not os.path.exists(gzip_file_name):
+            if not os.path.exists(GZIP_FILE_ NAME):
                 print(
                     f"please download the file {gzip_file_name} from https://www.10xgenomics.com/datasets/fresh-68-k-pbm-cs-donor-a-1-standard-1-1-0 into this data directory and then run this script again from that directory"
                 )
@@ -186,15 +186,6 @@ def create_anndata_from_csv(
     Returns:
         os.PathLike: name of h5ad file
     """
-
-    #  You should now have a directory called `filtered_matrices_mex/hg19`
-    # with the following files
-    #   1. barcodes.tsv
-    #   2. genes.tsv
-    #   3. matrix.mtx
-
-    # ## Pack the data into an AnnData file
-    #### Read the scRNA matrix from a file
     mmx = mmread(matrix_file)
 
     #### Create an AnnData object wrapping the read data

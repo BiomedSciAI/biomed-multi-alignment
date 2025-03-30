@@ -134,9 +134,6 @@ class CellTypeDataModule(pl.LightningDataModule):
 def anndata_train_test_split(
     h5ad_file, test_size=0.1, random_state=42, stratify_by=None
 ):
-    # h5ad_file.obs = h5ad_file.obs.rename(
-    # columns={"celltype": "label", "CellType": "label"}
-    # )
 
     if stratify_by is not None:
         stratify = h5ad_file.obs[stratify_by]
@@ -161,10 +158,7 @@ def load_datasets(
     data_path = Path(data_path)
     if not data_path.is_absolute():
         data_path = Path(__file__).parent / data_path
-    # read files
     anndata_object = anndata.read_h5ad(data_path)
-    # If the anndata files need to be post preprocessed, uncomment this line.
-    # preprocess_ann_data(anndata_object)
     anndata_dict = {}
     anndata_dict["all_data"] = anndata_object
     anndata_dict["all_train"], anndata_dict["test"] = anndata_train_test_split(
@@ -200,7 +194,7 @@ def load_datasets(
 
 
 def load_cell_type_mapping(
-    mapping_key="celltype", mapping_value="cell_type_ontology_term_id"
+    mapping_key="celltype", mapping_value="cell_type_ontology_term_id", cell_type_mapping="cell_type_mapping.csv"
 ):
     """
     Load metadata_extra_mapping.csv from the given dataset metadata folder,
@@ -209,9 +203,8 @@ def load_cell_type_mapping(
     This is used to convert the names from the ones in the input anndata to the
     ones that are known to the tokenizer.
     """
-    cell_type_mapping_file_path = Path(__file__).parent / "cell_type_mapping.csv"
+    cell_type_mapping_file_path = Path(__file__).parent / cell_type_mapping
 
-    #    this is new
     print(cell_type_mapping_file_path)
     if not os.path.exists(cell_type_mapping_file_path):
         raise FileNotFoundError(str(cell_type_mapping_file_path) + "is not found")
@@ -231,6 +224,7 @@ def preprocess_ann_data(
     min_genes: int = 200,
     normalize_total: float = 1000,
     num_bins: int = 10,
+    cell_type: str="celltype"
 ):
     """run preprocessing steps on anndata object
     assumes that the anndata object has a standard structure with counts per cell X gene, and cell type annotations in obs["celltype"].
@@ -249,11 +243,8 @@ def preprocess_ann_data(
 
     # place labels (cell types) in the "label" observations
     anndata_object.obs["label"] = [
-        cell_type_mapper[cell] for cell in anndata_object.obs["celltype"]
+        cell_type_mapper[cell] for cell in anndata_object.obs[cell_type]
     ]
-
-    # process the data:
-
     # filter out cells with shallow reads
     sc.pp.filter_cells(anndata_object, min_genes=min_genes)
     # normalize depth and
@@ -263,20 +254,11 @@ def preprocess_ann_data(
 
     # split range to bins - more or less 0,2,3,..10 if using about  10 bins
     # the +1 is intended to create num_bin bins, as `linespace` creates the bin ends starting at the lowest and ending at the highest values.
-
-    # find bin ends
     bins = np.linspace(
         anndata_object.X.data.min(), anndata_object.X.max(), num=num_bins + 1
     )
-
-    # convert the counts to bins
+Note that we change the reading values values into their bins
     anndata_object.X.data = np.digitize(anndata_object.X.data, bins)
 
     return anndata_object
 
-
-if __name__ == "__main__":
-    _ds_dict = load_datasets("data/Zheng68k_filtered.h5ad", stratify_by=["label"])
-    t0 = _ds_dict["train"][0]
-    print(t0)
-    print(_ds_dict["test"][0])

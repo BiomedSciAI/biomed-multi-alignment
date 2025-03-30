@@ -107,7 +107,6 @@ def main(
             print(
                 f"The data has {n_values} different expression bins which is typical for data that did not pass though the preprocessing."
             )
-            # Print the results
             for value, count in zip(unique_values, counts):
                 print(f"Value {value} appears {count} times")
             print("\n" * 4)
@@ -178,7 +177,6 @@ def create_sample_dict(
 
 
 def get_predictions(model, batch_dict):
-    # batch_dict = CollateDefault(skip_keys=CellTypeDataModule.skip_keys)([sample_dict])
     return model.generate(
         batch_dict,
         output_scores=True,
