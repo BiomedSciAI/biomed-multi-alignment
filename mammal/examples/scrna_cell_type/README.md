@@ -2,7 +2,7 @@
 This directory contains code to fine-tune a MAMMAL model, as is available on [hugging face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m)
 and to predict the cell type using the fine-tuned model.
 
-Also included are scripts to build an AnnData
+Also included are scripts to build an AnnData from the Zheng68k data (see below) that are used for the fine tune, and a script to prepare the AnnData file for Mammal.
 
 ##  Description
 ### Input structure:
