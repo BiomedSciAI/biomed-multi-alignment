@@ -233,7 +233,7 @@ def pre_process_anndata_file(
 
     Args:
         input_h5ad_file (_type_): name of standard AnnData file.  None if file needs to be created.
-        output_h5ad_file (_type_): name of AnnData file to save preprocessed output into
+        output_h5ad_file (str|none): name of AnnData file to save preprocessed output into. If None the input_h5ad_file file name will be used with the string _preprocessed added before the extension
         preprocessing_kwargs (dict, optional): parameters for preprocessing script. Defaults to {}.
         verbose (bool, optional): be verbose. Defaults to False.
     """
