@@ -25,13 +25,6 @@ from mammal.examples.scrna_cell_type.pl_data_module import preprocess_ann_data
     default=200,
 )
 @click.option(
-    "--normalize-total",
-    "-n",
-    type=click.FLOAT,
-    help="Value to normelize the sum or counts to",
-    default=1000.0,
-)
-@click.option(
     "--num-bins",
     "-b",
     type=click.INT,
@@ -42,7 +35,6 @@ def main(
     input_h5ad_file: str,
     output_h5ad_file: str,
     min_genes: int = 200,
-    normalize_total: float = 1000,
     num_bins: int = 10,
 ):
 
@@ -51,7 +43,6 @@ def main(
     preprocess_ann_data(
         anndata_object=anndata_object,
         min_genes=min_genes,
-        normalize_total=normalize_total,
         num_bins=num_bins,
     )
     # Save result anndata object to disk
