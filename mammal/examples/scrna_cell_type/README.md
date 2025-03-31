@@ -31,8 +31,9 @@ The code assumes that *all* the variables are gene counts, but AnnData allows ot
 
 The code uses the `"cell_type"` observation as the sample's class, so at least for training:
 
-*  The cell type of the observations are stored in the `adata.obs['celltype']` observation.
+*  The cell type of the observations are stored in the `adata.obs['cell_type']` observation.
 
+The key can be controlled via the `task.data_module_kwargs.label_name` parameter of the [config.yaml](config.yaml) file.
 
 Note that all the names of genes and cell types need to be consistent with the format/naming schema in the tokenizer.
 

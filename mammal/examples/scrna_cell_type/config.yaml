@@ -9,7 +9,7 @@ task:
   data_module_kwargs:
     data_path: "data/Zheng_68k_preprocessed.h5ad" #  this should be absolute or relative to the directory with the example code
     # this is the name of the observation the model will try to predict
-    label_name: "celltype"
+    label_name: "cell-type"
     batch_size: 20
     # tokenizer_op is provided later, dynamically
     train_dl_kwargs: # Dataloader constructor parameters
