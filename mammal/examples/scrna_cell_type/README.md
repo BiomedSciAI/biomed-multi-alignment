@@ -6,7 +6,7 @@ Also included are scripts to build an AnnData from the Zheng68k data (see below)
 
 ##  Description
 ### Input structure:
-The required input is an scRNA-seq [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad (or similar) file.
+The required input is an scRNA-seq [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad file.
 AnnData (for **Annotated Data**) is specifically designed for matrix-like data with meta data on both the samples and the variables.
 You can find explanations on its structure of and specifically AnnData for scRNA-seq data in [this AnnData tutorial](https://anndata.readthedocs.io/en/stable/tutorials/notebooks/getting-started.html).
 
