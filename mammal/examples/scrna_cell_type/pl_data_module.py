@@ -207,7 +207,6 @@ def load_cell_type_mapping(
     """
     cell_type_mapping_file_path = Path(__file__).parent / cell_type_mapping
 
-    print(cell_type_mapping_file_path)
     if not os.path.exists(cell_type_mapping_file_path):
         raise FileNotFoundError(str(cell_type_mapping_file_path) + "is not found")
     else:
