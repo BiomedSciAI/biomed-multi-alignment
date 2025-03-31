@@ -500,10 +500,12 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                     )
 
                 if config.use_lora and pretrained_has_lora_weights:
+                    print("Loading model with existing LoRA weights in it")
                     model.t5_model = get_lora_model(model.t5_model)
                     model.load_state_dict(state_dict, strict=strict)
 
                 elif config.use_lora and not pretrained_has_lora_weights:
+                    print("Loading model and create new LoRA weights on it")
                     model.load_state_dict(state_dict, strict=strict)
                     model.t5_model = get_lora_model(model.t5_model)
 
@@ -539,6 +541,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                 )
 
             if config.use_lora and pretrained_has_lora_weights:
+                print("Loading model with existing LoRA weights in it")
                 model.t5_model = get_lora_model(model.t5_model)
 
             if hasattr(config, "random_weights") and config.random_weights:
@@ -550,6 +553,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                 load_model(model, model_safetensors_path, strict=strict)
 
             if config.use_lora and not pretrained_has_lora_weights:
+                print("Loading model and create new LoRA weights on it")
                 model.t5_model = get_lora_model(model.t5_model)
 
         else:
