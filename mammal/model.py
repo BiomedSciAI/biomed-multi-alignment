@@ -12,7 +12,7 @@ from fuse.dl.models.heads.common import ClassifierMLP
 from huggingface_hub import ModelHubMixin, snapshot_download
 from huggingface_hub.constants import CONFIG_NAME, SAFETENSORS_SINGLE_FILE
 from omegaconf import DictConfig, OmegaConf
-from safetensors.torch import load_model, save_model
+from safetensors.torch import load_file, load_model, save_model
 from transformers import PretrainedConfig, T5Config, T5ForConditionalGeneration
 
 from mammal.keys import *  # noqa
@@ -410,7 +410,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         """
         if not os.path.exists(pretrained_model_name_or_path):
             print(
-                f"Path doesn't exist. Will try to download fron hf hub. {pretrained_model_name_or_path=}"
+                f"Path doesn't exist. Will try to download from hf hub. {pretrained_model_name_or_path=}"
             )
             # Download ckpt dir from HF
             try:
@@ -482,6 +482,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                     )
 
                 state_dict = pl_ckpt_dict["state_dict"]
+
                 lightning_model_prefix = "_model."
                 state_dict = {
                     (
@@ -491,8 +492,25 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                     ): value
                     for key, value in state_dict.items()
                 }
-                # Inject weights to model instance
-                model.load_state_dict(state_dict, strict=strict)
+
+                pretrained_has_lora_weights = has_lora_weights(state_dict=state_dict)
+                if pretrained_has_lora_weights and not config.use_lora:
+                    raise ValueError(
+                        "LoRA weights found in state_dict, but 'config.use_lora' is False."
+                    )
+
+                if config.use_lora and pretrained_has_lora_weights:
+                    print("Loading model with existing LoRA weights in it")
+                    model.t5_model = get_lora_model(model.t5_model)
+                    model.load_state_dict(state_dict, strict=strict)
+
+                elif config.use_lora and not pretrained_has_lora_weights:
+                    print("Loading model and create new LoRA weights on it")
+                    model.load_state_dict(state_dict, strict=strict)
+                    model.t5_model = get_lora_model(model.t5_model)
+
+                else:
+                    model.load_state_dict(state_dict, strict=strict)
 
         elif os.path.isdir(pretrained_model_name_or_path):
             print(
@@ -510,9 +528,21 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                 config.override(config_overrides)
 
             model = cls(config)
+
             model_safetensors_path = os.path.join(
                 pretrained_model_name_or_path, SAFETENSORS_SINGLE_FILE
             )
+
+            state_dict = load_file(model_safetensors_path)
+            pretrained_has_lora_weights = has_lora_weights(state_dict=state_dict)
+            if pretrained_has_lora_weights and not config.use_lora:
+                raise ValueError(
+                    "LoRA weights found in state_dict, but 'config.use_lora' is False."
+                )
+
+            if config.use_lora and pretrained_has_lora_weights:
+                print("Loading model with existing LoRA weights in it")
+                model.t5_model = get_lora_model(model.t5_model)
 
             if hasattr(config, "random_weights") and config.random_weights:
                 print(
@@ -522,12 +552,12 @@ class Mammal(ModelHubMixin, torch.nn.Module):
                 # Inject weights to model instance
                 load_model(model, model_safetensors_path, strict=strict)
 
+            if config.use_lora and not pretrained_has_lora_weights:
+                print("Loading model and create new LoRA weights on it")
+                model.t5_model = get_lora_model(model.t5_model)
+
         else:
-            raise ValueError()
-
-        if config.use_lora:
-            model.t5_model = get_lora_model(model.t5_model)
-
+            raise ValueError(f"Got an invalid input, {pretrained_model_name_or_path=}")
         return model
 
     @property
@@ -544,3 +574,10 @@ def get_encoder_mlp_head(
         dropout_rate=dropout,
         num_classes=num_classes,
     )
+
+
+def has_lora_weights(state_dict: dict[str, Any]) -> bool:
+    """
+    Checks if the given state_dict contains LoRA weights.
+    """
+    return any("lora" in w for w in state_dict.keys())
