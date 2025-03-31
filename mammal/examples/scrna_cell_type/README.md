@@ -6,7 +6,7 @@ Also included are scripts to build an AnnData from the Zheng68k data (see below)
 
 ##  Description
 ### Input structure:
-The required input is an scRNA-seq [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad (or similar) file.
+The required input is an scRNA-seq [AnnData](https://anndata.readthedocs.io/en/stable/) structure saved in an h5ad file.
 AnnData (for **Annotated Data**) is specifically designed for matrix-like data with meta data on both the samples and the variables.
 You can find explanations on its structure of and specifically AnnData for scRNA-seq data in [this AnnData tutorial](https://anndata.readthedocs.io/en/stable/tutorials/notebooks/getting-started.html).
 
@@ -45,7 +45,7 @@ As is explained in the [encoding section below](#geneformer-inspired-ordered-gen
 requires that the counts for each gene will be **replaced** with a digitized version of the value, which corresponds to the bin the value falls into.
 The bins are assumed to be numbered `0,1,...,n-1' where smaller bin number represents a bigger count.
 
-The code assumes that the data has been filtered as needs and then digitized and saved into an h5ad file with the bin numbers *replacing* the counts in the `data.X` matrix.
+In this example, the data has been filtered, digitized, and saved as an h5ad file with the bin numbers *replacing* the counts in the `data.X` matrix.
 
 ### Filtering and processing reference script
 The [data/process_h5ad_data.py](data/process_h5ad_data.py) script runs the data preprocessing as described above.  This process consists of
