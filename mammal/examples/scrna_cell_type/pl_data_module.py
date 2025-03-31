@@ -223,7 +223,6 @@ def load_cell_type_mapping(
 def preprocess_ann_data(
     anndata_object: anndata.AnnData,
     min_genes: int = 200,
-    normalize_total: float = 1000,
     num_bins: int = 10,
     cell_type: str = "cell_type",
 ):
@@ -233,7 +232,7 @@ def preprocess_ann_data(
     steps include:
         - translate cell types to ontology term ids
         - filter out cells with less than 200 genes expressed
-        - normalize expression data sum to 1000
+        - normalize expression data sum to 1
         - transform counts via log1p in base 2
         - digitize expression data into bins
 
@@ -249,7 +248,7 @@ def preprocess_ann_data(
     # filter out cells with shallow reads
     sc.pp.filter_cells(anndata_object, min_genes=min_genes)
     # normalize depth and
-    sc.pp.normalize_total(anndata_object, target_sum=normalize_total)
+    sc.pp.normalize_total(anndata_object, target_sum=1.0)
     # change to log1p space, which is approximately in the scale of 0 to 10 (log_2(1001)~=10)
     sc.pp.log1p(anndata_object, base=2)
 
