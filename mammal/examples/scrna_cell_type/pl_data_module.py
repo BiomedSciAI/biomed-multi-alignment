@@ -227,7 +227,7 @@ def preprocess_ann_data(
     cell_type: str = "cell_type",
 ):
     """run preprocessing steps on anndata object
-    assumes that the anndata object has a standard structure with counts per cell X gene, and cell type annotations in obs["cell_type"].
+    assumes that the anndata object has a standard structure with counts per cell X gene, and cell type annotations in obs[cell_type].
 
     steps include:
         - translate cell types to ontology term ids
