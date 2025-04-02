@@ -1,0 +1,12 @@
+celltype,cell_type_ontology_term_name,cell_type_ontology_term_id,comments
+"CD14+ Monocyte","CD14-positive monocyte",CL:0001054,
+"CD19+ B","B cell",CL:0000236,"exact mapping is CL:0001201 but it doesn't exists in cellxgene so a parent celltype was chosen"
+"CD34+","CD34-positive, CD38-positive common myeloid progenitor OR CD34-positive, CD38-positive common lymphoid progenitor",CL:0000049,"exact mapping is CL:0000995 but it doesn't exists in cellxgene so a parent celltype was chosen"
+"CD4+/CD25 T Reg","CD4-positive, CD25-positive, alpha-beta regulatory T cell",CL:0000792,
+"CD4+/CD45RA+/CD25- Naive T","naive thymus-derived CD4-positive, alpha-beta T cell",CL:0000895,
+"CD4+/CD45RO+ Memory","CD4-positive, alpha-beta memory T cell, CD45RO-positive",CL:0001204,
+"CD4+ T Helper2","T-helper 2 cell",CL:0000546,
+"CD56+ NK","CD16-positive, CD56-dim natural killer cell, human",CL:0000939,
+"CD8+/CD45RA+ Naive Cytotoxic","Effector Memory Cd8-Positive, Alpha-Beta T Cell, Terminally Differentiated",CL:0001062,"mapped also to parentsm, may need review"
+"CD8+ Cytotoxic T","CD8-positive, alpha-beta cytotoxic T cell",CL:0000794,
+"Dendritic","dendritic cell",CL:0000451,"maybe we need the child cell type - dendtiric, human"

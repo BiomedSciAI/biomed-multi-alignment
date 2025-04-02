@@ -3,6 +3,7 @@
 # - for configurations insufficiently supported by pyproject.toml, use setup.cfg instead
 # - setup.py discouraged; minimal stub included only for compatibility with legacy tools
 
+
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
@@ -31,7 +32,9 @@ dependencies = [
 
 [project.optional-dependencies]
 examples = [
-  "PyTDC"
+  "PyTDC",
+  "anndata",
+  "click",
 ]
 
 [project.urls]
