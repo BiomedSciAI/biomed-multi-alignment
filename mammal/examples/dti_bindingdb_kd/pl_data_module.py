@@ -7,7 +7,7 @@ from fuse.data.pipelines.pipeline_default import PipelineDefault
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 from fuse.data.tokenizers.modular_tokenizer.special_tokens import special_wrap_input
 from fuse.data.utils.collates import CollateDefault
-from tdc.multi_pred import DTI
+from tdc.multi_pred.dti import DTI
 from torch.utils.data.dataloader import DataLoader
 
 from mammal.keys import *  # noqa

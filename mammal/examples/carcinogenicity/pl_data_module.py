@@ -6,7 +6,7 @@ from fuse.data.ops.ops_read import OpReadDataframe
 from fuse.data.pipelines.pipeline_default import PipelineDefault
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 from fuse.data.utils.collates import CollateDefault
-from tdc.single_pred import Tox
+from tdc.single_pred.tox import Tox
 from torch.utils.data.dataloader import DataLoader
 
 from mammal.keys import *  # noqa
