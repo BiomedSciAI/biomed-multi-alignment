@@ -10,6 +10,7 @@ from fastmcp import FastMCP
 from pydantic import BaseModel
 from util import process_model_output
 
+from mammal.examples.dti_bindingdb_kd.task import DtiBindingdbKdTask
 from tcr_epitope_binding_temp import task_infer
 from mammal.examples.protein_solubility.task import ProteinSolubilityTask
 from mammal.keys import (
@@ -203,6 +204,39 @@ if os.getenv("TCR_EPITOPE_BINDING") == "true":
         )
         return result
 
+if os.getenv("DRUG_TARGET_BINDING") == "true":
+    @mcp.tool()
+    async def drug_target_binding(target_seq: str, drug_seq: str) -> dict[str, float]: 
+    
+        modelpath = assets["drug_target_model"] #load pre-loaded model
+        tokenizerpath = assets["drug_target_model_tokeniser_op"]
+
+        # convert to MAMMAL style
+        sample_dict = {"target_seq":target_seq,"drug_seq":drug_seq}
+        sample_dict = DtiBindingdbKdTask.data_preprocessing(
+            sample_dict=sample_dict,
+            tokenizer_op=tokenizerpath,
+            target_sequence_key="target_seq",
+            drug_sequence_key="drug_seq",
+            norm_y_mean=None,
+            norm_y_std=None,
+            device=modelpath.device
+
+        )
+
+        #forward pass - encoder only mode which supports scalar predictions
+        batch_dict = modelpath.forward_encoder_only([sample_dict])
+
+        #post-process model output
+        batch_dict = DtiBindingdbKdTask.process_model_output(
+            batch_dict,
+            scalars_preds_processed_key="model.out.dti_bindingdb_kd",
+            norm_y_mean=5.79384684128215,
+            norm_y_std=1.33808027428196,
+        )
+
+        result = {"model.out.dti_bindingdb_kd" : float(batch_dict["model.out.dti_bindingdb_kd"][0])}
+        return result
 
 
 async def main():

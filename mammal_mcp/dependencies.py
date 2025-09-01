@@ -84,6 +84,26 @@ async def lifespan():
             cache_dir="model_cache",
         )
 
+
+    if os.getenv("DRUG_TARGET_BINDING") == "true":
+        logger.info(
+            "downloading: ibm/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd"
+        )
+
+        drug_target_model = Mammal.from_pretrained(
+            "ibm/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd",
+            cache_dir="model_cache",
+        )
+        #  set to eval/inference mode
+        drug_target_model.eval()
+        assets["drug_target_model"] = drug_target_model
+
+        # download tokeniser
+        assets["drug_target_model_tokeniser_op"] = ModularTokenizerOp.from_pretrained(
+            "ibm/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd",
+            cache_dir="model_cache",
+        )
+        
     logger.info("Assets loaded")
 
     yield
