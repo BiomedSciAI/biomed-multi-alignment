@@ -10,6 +10,12 @@ This repository is a fastmcp server which creates entrypoints for AI Agents to m
 
 ## Getting started
 
+Change to mammal-mcp directory 
+
+```sh
+cd mammal_mcp
+```
+
 Create the environment:
 
 ```sh
@@ -50,6 +56,8 @@ For that, update your Claude Desktop config file (located at `~/Library/Applicat
 ```
 
 **- Change both placeholders in this JSON indicated with <>**
+
+Quit and re-start Claude Desktop, then use appropriate prompt.
 
 ### Integration into [MCPHost](https://github.com/mark3labs/mcphost) (using [Ollama](https://ollama.com/))
 
@@ -115,28 +123,57 @@ When you start Claude for any task you will get JSON parsing related error messa
 
 ### 1. Protein protein interaction prediction
 
-Ensure `PROTEIN_PROTEIN_INTERATION` is set to `true` in `.env` file
+- Binary classification task to predict protein-protein interaction using the pre-trained model `ibm-research/biomed.omics.bl.sm.ma-ted-458m`. 
 
-Example prompt:
+- Expected input are the either the amino acid sequences of the two proteins or the protein names. 
 
-`Do proteins VPS35 and VPS26 interact together?`
-
-### 2. Protein solubility prediction
-
-Ensure `PROTEIN_SOLUBILITY` is set to `true` in `.env` file
-
-Example prompt:
-
-`How soluble is VPS35?`
-
-### 3. TCR-epitope binding
-
-Ensure `TCR_EPITOPE_BINDING` is set to `true` in `.env` file
+- Ensure `PROTEIN_PROTEIN_INTERATION` is set to `true` in `.env` file
 
 Example prompt:
 
 ```
-does the tcr with the following sequence NAGVTQTPKFQVLKTGQSMTLQCAQDMNHEYMSWYRQDPGMGLRLIHYSVGAGITDQGEVPNGYNVSRSTTEDFPLRLLSAAPSQTSVYFCASSYSWDRVLEQYFGPGTRLTVT bind to the epitope with following sequence LLQTGIHVRVSQPSL
+Do proteins VPS35 and VPS26 interact together?
+```
+
+### 2. Protein solubility prediction
+
+- Binary classification task to predict protein solubility using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.protein_solubility`. 
+
+- Expected input are the either the amino acid sequences of the protein or the protein name. 
+
+- Ensure `PROTEIN_SOLUBILITY` is set to `true` in `.env` file
+
+Example prompt:
+
+```
+Is protein VPS35 soluble in aqueous solutions?
+```
+### 3. Drug-target binding prediction
+
+- Prediction of drug-target binding affinity using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd`. 
+
+- Expected input are the amino acid sequence of the target and the SMILES representation of the drug. Binding affinity is predicted using pKd (the negative logarithm of the dissociation constant, reflecting the strength of the interaction between a sm molecule and protein)
+
+- Ensure `DRUG_TARGET_BINDING` is set to `true` in `.env` file
+
+Example prompt:
+
+```
+What is the predicted binding affinity between the drug with the SMILES sequence "CC(=O)NCCC1=CNc2c1cc(OC)cc2" and target protein with amino acid sequence "NLMKRCTRGFRKLGKCTTLEEEKCKTLYPRGQCTCSDSKMNTHSCDCKSC"
+```
+
+### 4. TCR-epitope binding
+
+- Binary classification task predicting binding of binding between T-cell receptor and epitope sequences using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind`. 
+
+- Expected inputs are the amino acid sequences of the epitope and T-cell receptor. 
+
+- Ensure `TCR_EPITOPE_BINDING` is set to `true` in `.env` file
+
+Example prompt:
+
+```
+does the tcr with the following sequence NAGVTQTPKFQVLKTGQSMTLQCAQDMNHEYMSWYRQDPGMGLRLIHYSVGAGITDQGEVPNGYNVSRSTTEDFPLRLLSAAPSQTSVYFCASSYSWDRVLEQYFGPGTRLTVT bind to the epitope with following sequence LLQTGIHVRVSQPSL?
 ```
 
 ## Running the server using Streamable-HTTP
@@ -153,14 +190,3 @@ The server should start on http://127.0.0.1:8001 (if you want to change the port
 
 
 
-# To do
-
-Add other supported inference tasks using fine-tuned MAMMAL models provided by -> https://huggingface.co/models?other=base_model:finetune:ibm-research/biomed.omics.bl.sm.ma-ted-458m
-
-- [x] Protein-protein interaction ([hugging_face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m))
-- [x] Protein solubility ([hugging_face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m.protein_solubility))
-- [ ] Drug-target binding affinity ([hugging_face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd))
-- [ ] Binding affinity SMILES-AA ([hugging_face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd_peer))
-- [x] T-cell receptor (TCR) binding to immunogenic peptides (epitopes) ([hugging_face](https://huggingface.co/ibm-research/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind))
-
-# Known issues
