@@ -10,6 +10,7 @@ from fastmcp import FastMCP
 from pydantic import BaseModel
 from util import process_model_output
 
+from tcr_epitope_binding_temp import task_infer
 from mammal.examples.protein_solubility.task import ProteinSolubilityTask
 from mammal.keys import (
     CLS_PRED,
@@ -186,6 +187,22 @@ if os.getenv("PROTEIN_SOLUBILITY") == "true":
 
         # Print prediction
         return ans["normalized_scores"].item()
+
+if os.getenv("TCR_EPITOPE_BINDING") == "true":
+    @mcp.tool()
+    async def tcr_epitope_binding(tcr_beta_seq: str, epitope_seq: str) -> dict[str, float]: 
+        
+        modelpath = assets["tcr_epitope_model"] #load pre-loaded model
+        tokenizerpath = assets["tcr_epitope_model_tokenizer_op"] # load tokeniser operater
+
+        result = task_infer(
+        model=modelpath,
+        tokenizer_op=tokenizerpath,
+        tcr_beta_seq=tcr_beta_seq,
+        epitope_seq=epitope_seq,
+        )
+        return result
+
 
 
 async def main():
