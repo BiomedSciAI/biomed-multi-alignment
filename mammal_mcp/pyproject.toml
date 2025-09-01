@@ -1,0 +1,42 @@
+[project]
+name = "mammal_mcp"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "IBM Research" },
+    { name = "Ash Evans", email = "ash.evans@ibm.com" },
+    { name = "Jennifer Kelly", email = "jennifer.kelly@ibm.com" }
+]
+readme = "README.md"
+requires-python = ">=3.10, <3.12"
+dependencies = [
+    "biomed-multi-alignment>=0.2.1",
+    "fastmcp>=2.6.1",
+    "fuse-med-ml>=0.4.0",
+    "mcp[cli]>=1.6.0",
+    "mypy>=1.17.1",
+    "pre-commit>=4.3.0",
+    "pydantic>=2.11.1",
+    "pydantic-settings>=2.8.1",
+    "pytdc>=0.4.1",
+    "pytest>=8.3.5",
+    "python-dotenv>=1.1.0",
+    "requests==2.24.0",
+    "types-requests>=2.31.0.6",
+    "uv>=0.6.11",
+]
+
+[dependency-groups]
+dev = [
+    "types-requests>=2.31.0.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "types-requests",
+    "mypy",
+    "types-PyYAML",
+    "types-decorator",
+    "types-simplejson",
+    "types-tabulate",
+]
