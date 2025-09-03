@@ -10,7 +10,7 @@ This repository is a fastmcp server which creates entrypoints for AI Agents to m
 
 ## Getting started
 
-Change to mammal-mcp directory 
+Change to mammal-mcp directory
 
 ```sh
 cd mammal_mcp
@@ -123,9 +123,9 @@ When you start Claude for any task you will get JSON parsing related error messa
 
 ### 1. Protein protein interaction prediction
 
-- Binary classification task to predict protein-protein interaction using the pre-trained model `ibm-research/biomed.omics.bl.sm.ma-ted-458m`. 
+- Binary classification task to predict protein-protein interaction using the pre-trained model `ibm-research/biomed.omics.bl.sm.ma-ted-458m`.
 
-- Expected input are the either the amino acid sequences of the two proteins or the protein names. 
+- Expected input are the either the amino acid sequences of the two proteins or the protein names.
 
 - Ensure `PROTEIN_PROTEIN_INTERATION` is set to `true` in `.env` file
 
@@ -137,9 +137,9 @@ Do proteins VPS35 and VPS26 interact together?
 
 ### 2. Protein solubility prediction
 
-- Binary classification task to predict protein solubility using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.protein_solubility`. 
+- Binary classification task to predict protein solubility using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.protein_solubility`.
 
-- Expected input are the either the amino acid sequences of the protein or the protein name. 
+- Expected input are the either the amino acid sequences of the protein or the protein name.
 
 - Ensure `PROTEIN_SOLUBILITY` is set to `true` in `.env` file
 
@@ -150,7 +150,7 @@ Is protein VPS35 soluble in aqueous solutions?
 ```
 ### 3. Drug-target binding prediction
 
-- Prediction of drug-target binding affinity using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd`. 
+- Prediction of drug-target binding affinity using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd`.
 
 - Expected input are the amino acid sequence of the target and the SMILES representation of the drug. Binding affinity is predicted using pKd (the negative logarithm of the dissociation constant, reflecting the strength of the interaction between a sm molecule and protein)
 
@@ -164,9 +164,9 @@ What is the predicted binding affinity between the drug with the SMILES sequence
 
 ### 4. TCR-epitope binding
 
-- Binary classification task predicting binding of binding between T-cell receptor and epitope sequences using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind`. 
+- Binary classification task predicting binding of binding between T-cell receptor and epitope sequences using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.tcr_epitope_bind`.
 
-- Expected inputs are the amino acid sequences of the epitope and T-cell receptor. 
+- Expected inputs are the amino acid sequences of the epitope and T-cell receptor.
 
 - Ensure `TCR_EPITOPE_BINDING` is set to `true` in `.env` file
 
@@ -187,6 +187,3 @@ uv run python -m server
 ```
 
 The server should start on http://127.0.0.1:8001 (if you want to change the port number from 8001 then modify this in the .env file) after loading all the models for the tasks you have selected.
-
-
-
