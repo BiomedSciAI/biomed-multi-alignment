@@ -268,6 +268,24 @@ wheels = [
 ]
 
 [[package]]
+name = "bio"
+version = "1.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "biopython" },
+    { name = "gprofiler-official" },
+    { name = "mygene" },
+    { name = "pandas" },
+    { name = "pooch" },
+    { name = "requests" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ad/98/7117ab03ebc983b94dffc5f6ffd4dc7bd695ed5d1841155f806311c47628/bio-1.8.0.tar.gz", hash = "sha256:b15bc8cd9b93bdaed83a9da57ac92708216beade2d4351d782f70da3868f95a5", size = 281034, upload-time = "2025-05-07T13:58:25.744Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5c/9e/8c85998902ada23fce54bef8cb864a8e84302f275fc178ec65f75db80abe/bio-1.8.0-py3-none-any.whl", hash = "sha256:8861fb3ef608d3ce8b2fd8dc8d9a901c4d29b58b9fbd30b5059d089c608a6e13", size = 321106, upload-time = "2025-05-07T13:58:27.117Z" },
+]
+
+[[package]]
 name = "biomed-multi-alignment"
 version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -283,6 +301,42 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8b/5f/d2e09b4389e1a7ddda0aff27a7a27b4f3d3b9f6a7738d3678b601a257ace/biomed_multi_alignment-0.2.1.tar.gz", hash = "sha256:4a7fa45f86e6a12d23230865c8bc1bea263a0f7fe82339cf57f2abd61baee6b4", size = 1446420, upload-time = "2024-11-13T09:24:28.461Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fd/2a/00e4368de5d561b3c24849fc6eb7a3dedd39b209539d1b4b5b22bb09f749/biomed_multi_alignment-0.2.1-py3-none-any.whl", hash = "sha256:241a631332b7675952fc133426eeb808666d73291c65814593361c8acee3fcc6", size = 67112, upload-time = "2024-11-13T09:24:27.293Z" },
+]
+
+[[package]]
+name = "biopython"
+version = "1.85"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/db/ca/1d5fab0fedaf5c2f376d9746d447cdce04241c433602c3861693361ce54c/biopython-1.85.tar.gz", hash = "sha256:5dafab74059de4e78f49f6b5684eddae6e7ce46f09cfa059c1d1339e8b1ea0a6", size = 19909902, upload-time = "2025-01-15T15:06:51.997Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/79/de/79824470fdc5c2aedeb1bab637d24eab654a7e9fbb7070f779fd944fd1ca/biopython-1.85-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a6308053a61f3bdbb11504ece4cf24e264c6f1d6fad278f7e59e6b84b0d9a7b4", size = 2787511, upload-time = "2025-01-15T15:11:56.656Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/d6/3c90df2ebc4f2a522235f4391392253e528f19f5fb6a52396a2316e17064/biopython-1.85-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:434dd23e972b0c89e128f2ebbd16b38075d609184f4f1fd16368035f923019c2", size = 2765456, upload-time = "2025-01-15T15:12:05.177Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/d7/34233c4ee906b088b199eb2af9c4107384a547d44b5960257ef2bf2cc3c8/biopython-1.85-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9a08d082e85778259a83501063871e00ba57336136403b75050eea14d523c00a", size = 3225137, upload-time = "2025-01-15T15:12:15.847Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/6b/e7a5ae49ef7e8f81720593db22e884c1c8e3504e0e235da0395758a5c7d0/biopython-1.85-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d93464e629950e4df87d810125dc4e904538a4344b924f340908ea5bc95db986", size = 3245258, upload-time = "2025-01-15T15:12:21.012Z" },
+    { url = "https://files.pythonhosted.org/packages/68/2c/0035656dbe51ac0bbe81321172b43c37b38408f8d136abaac443e9f44b62/biopython-1.85-cp310-cp310-win32.whl", hash = "sha256:f2f45ab3f1e43fdaa697fd753148999090298623278097c19c2c3c0ba134e57c", size = 2786505, upload-time = "2025-01-15T15:12:26.545Z" },
+    { url = "https://files.pythonhosted.org/packages/32/a4/f20d5830dbd8654c13e763daef429fa32ef0b2b09749ac427d045cc81976/biopython-1.85-cp310-cp310-win_amd64.whl", hash = "sha256:7c8326cd2825ba166abecaf72843b9b15823affd6cec04fde65f0d2526767da4", size = 2820961, upload-time = "2025-01-15T15:12:32.364Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/73/c3a1323a3fe0d07212b09c04fb903e2cbb98aebfbb58e55e8717473e1bc0/biopython-1.85-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:db8822adab0cd75a6e6ae845acf312addd8eab5f9b731c191454b961fc2c2cdc", size = 2787585, upload-time = "2025-01-15T15:12:36.927Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/cf/299524e896fa49beb7588143e1509cce4848572215ebafb8eea83a861820/biopython-1.85-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:8e2bbe58cc1a592b239ef6d68396745d3fbfaafc668ce38283871d8ff070dbab", size = 2765608, upload-time = "2025-01-15T15:12:43.853Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/dd/be3e95b72a35ee6d52c84412e15af828951e5c69175080d4619985fd54ce/biopython-1.85-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5916eb56df7ecd4a3babc07a48d4894c40cfb45dc18ccda1c148d0131017ce04", size = 3237552, upload-time = "2025-01-15T15:12:49.046Z" },
+    { url = "https://files.pythonhosted.org/packages/25/9c/612821b946930b6caa5d795cfe4169ed6a522562eced9776914be7efaf21/biopython-1.85-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b0cec8833bf3036049129944ee5382dd576dac9670c3814ff2314b52aa94f199", size = 3257287, upload-time = "2025-01-15T15:12:56.168Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/77/316e51dd42fd8225429574a268bdc627ce4f42067a3976c4c8c457a42023/biopython-1.85-cp311-cp311-win32.whl", hash = "sha256:cf88a4c8d8af13138be115949639a5e4a201618185a72ff09adbe175b7946b28", size = 2786411, upload-time = "2025-01-15T15:13:02.754Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/11/3c4e8c049b91998bbbd51ddebc6f790b1aa66211babfbf5ff008a72fb1f9/biopython-1.85-cp311-cp311-win_amd64.whl", hash = "sha256:d3c99db65d57ae4fc5034e42ac6cd8ddce069e664903f04c8a4f684d7609d6fa", size = 2820912, upload-time = "2025-01-15T15:13:10.499Z" },
+]
+
+[[package]]
+name = "biothings-client"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ef/2f/2ef9115e317f4c2acb690b341f40de751b16d14169fdbb8d6eb86964166c/biothings_client-0.4.1.tar.gz", hash = "sha256:5b34e09c905280b5bd2538f1f34b6fc780c53c8da9b4074e3ff304836046f613", size = 56096, upload-time = "2025-01-14T22:55:39.926Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dc/6d/130477cfbd7294949b919c45cc1ed14a642cec95afba06a54400a4419235/biothings_client-0.4.1-py3-none-any.whl", hash = "sha256:9cbc17461b2bf6af6ed200929b886d6670d450af2034b428cd833f725695265a", size = 46698, upload-time = "2025-01-14T22:55:37.44Z" },
 ]
 
 [[package]]
@@ -963,6 +1017,18 @@ wheels = [
 ]
 
 [[package]]
+name = "gprofiler-official"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ec/c1/d9252620d09a064247d1623ebc4732d624921a2ed80a677f8b9ce61810dd/gprofiler-official-1.0.0.tar.gz", hash = "sha256:5015b47f10fbdcb59c57e342e815c9c07afbe57cd3984154f75b845ddef2445d", size = 9584, upload-time = "2019-04-02T10:52:19.527Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/1b/5a87c1a1da8f601c00a0ce4dedb5aab8a5cad6a0f4a5062c4da22a045072/gprofiler_official-1.0.0-py3-none-any.whl", hash = "sha256:c582baf728e5a6cddac964e4085ca385e082c4ef0279e3af1a16a9af07ab5395", size = 9277, upload-time = "2019-04-02T10:52:17.769Z" },
+]
+
+[[package]]
 name = "grpcio"
 version = "1.74.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1498,6 +1564,7 @@ name = "mammal-mcp"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "bio" },
     { name = "biomed-multi-alignment" },
     { name = "fastmcp" },
     { name = "fuse-med-ml" },
@@ -1531,6 +1598,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bio", specifier = ">=1.7.1" },
     { name = "biomed-multi-alignment", specifier = ">=0.2.1" },
     { name = "fastmcp", specifier = ">=2.6.1" },
     { name = "fuse-med-ml", specifier = ">=0.4.0" },
@@ -1799,6 +1867,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/74/7d/36b045c23a1ab98507aefd44fd8b264ee1dd5e5010543c6fccf82141ccef/multidict-6.6.4-cp311-cp311-win_amd64.whl", hash = "sha256:d8c112f7a90d8ca5d20213aa41eac690bb50a76da153e3afb3886418e61cb22e", size = 46029, upload-time = "2025-08-11T12:06:51.082Z" },
     { url = "https://files.pythonhosted.org/packages/0f/5e/553d67d24432c5cd52b49047f2d248821843743ee6d29a704594f656d182/multidict-6.6.4-cp311-cp311-win_arm64.whl", hash = "sha256:3bb0eae408fa1996d87247ca0d6a57b7fc1dcf83e8a5c47ab82c558c250d4adf", size = 43017, upload-time = "2025-08-11T12:06:52.243Z" },
     { url = "https://files.pythonhosted.org/packages/fd/69/b547032297c7e63ba2af494edba695d781af8a0c6e89e4d06cf848b21d80/multidict-6.6.4-py3-none-any.whl", hash = "sha256:27d8f8e125c07cb954e54d75d04905a9bba8a439c1d84aca94949d4d03d8601c", size = 12313, upload-time = "2025-08-11T12:08:46.891Z" },
+]
+
+[[package]]
+name = "mygene"
+version = "3.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "biothings-client" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0a/ec/a256003f84196aa3fdd65a7c6f5adfc0688398fb66442eba75b39c9b7627/mygene-3.2.2.tar.gz", hash = "sha256:e729cabbc28cf5afb221bca1ab637883b375cb1a3e2f067587ec79f71affdaea", size = 5399, upload-time = "2021-04-05T21:24:30.934Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/b7/132b1673c0ec00881d49d56c09624942fa0ebd2fc21d73d80647efa082e9/mygene-3.2.2-py2.py3-none-any.whl", hash = "sha256:18d85d1b28ecee2be31d844607fb0c5f7d7c58573278432df819ee2a5e88fe46", size = 5357, upload-time = "2021-04-05T21:24:29.07Z" },
 ]
 
 [[package]]
@@ -2445,6 +2525,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
+name = "pooch"
+version = "1.8.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "platformdirs" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/77/b3d3e00c696c16cf99af81ef7b1f5fe73bd2a307abca41bd7605429fe6e5/pooch-1.8.2.tar.gz", hash = "sha256:76561f0de68a01da4df6af38e9955c4c9d1a5c90da73f7e40276a5728ec83d10", size = 59353, upload-time = "2024-06-06T16:53:46.224Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a8/87/77cc11c7a9ea9fd05503def69e3d18605852cd0d4b0d3b8f15bbeb3ef1d1/pooch-1.8.2-py3-none-any.whl", hash = "sha256:3529a57096f7198778a5ceefd5ac3ef0e4d06a6ddaf9fc2d609b806f25302c47", size = 64574, upload-time = "2024-06-06T16:53:44.343Z" },
 ]
 
 [[package]]

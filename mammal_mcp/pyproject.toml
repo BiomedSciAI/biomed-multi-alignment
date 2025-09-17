@@ -24,6 +24,7 @@ dependencies = [
     "requests==2.24.0",
     "types-requests>=2.31.0.6",
     "uv>=0.6.11",
+    "bio>=1.7.1",
 ]
 
 [dependency-groups]
