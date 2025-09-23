@@ -4,13 +4,13 @@ import os
 
 import requests
 import torch
+from Bio import SeqIO
 from dependencies import assets, lifespan
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 from pydantic import BaseModel
 from tcr_epitope_binding_temp import task_infer
 from util import process_model_output
-from Bio import SeqIO
 
 from mammal.examples.dti_bindingdb_kd.task import DtiBindingdbKdTask
 from mammal.examples.protein_solubility.task import ProteinSolubilityTask
@@ -171,16 +171,21 @@ def drug_target_pkd_prediction_single(
     }
     return result
 
-def drug_target_pkd_prediction_fasta(target_file: str,drug_sequence: str) -> dict[str, float]:
+
+def drug_target_pkd_prediction_fasta(
+    target_file: str, drug_sequence: str
+) -> dict[str, float]:
 
     result = {}
     for seq_record in SeqIO.parse(target_file, "fasta"):
         if len(seq_record) > 200 and len(seq_record) < 1240:
             sequence_name = seq_record.description
-            #sample_dict = {"target_seq": target_seq, "drug_seq": drug_seq} 
-            batch_dict = drug_target_pkd_prediction_single(seq_record.seq, drug_sequence)
-            result[sequence_name] = batch_dict["model.out.dti_bindingdb_kd"]   
-        #result = {"model.out.dti_bindingdb_kd" : float(batch_dict["model.out.dti_bindingdb_kd"][0])}
+            # sample_dict = {"target_seq": target_seq, "drug_seq": drug_seq}
+            batch_dict = drug_target_pkd_prediction_single(
+                seq_record.seq, drug_sequence
+            )
+            result[sequence_name] = batch_dict["model.out.dti_bindingdb_kd"]
+        # result = {"model.out.dti_bindingdb_kd" : float(batch_dict["model.out.dti_bindingdb_kd"][0])}
     return result
 
 
@@ -276,18 +281,23 @@ if os.getenv("DRUG_TARGET_BINDING") == "true":
         """
         return drug_target_pkd_prediction_single(target_seq, drug_seq)
 
-if os.getenv("DRUG_TARGET_BINDING_FASTA") == "true":
-    @mcp.tool()
-    async def drug_target_binding_fasta(target_file: str, drug_sequence: str) -> dict[str, float]: 
-        """
-        This tool predicts drug-target binding affinity using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd`. 
 
-        Expected input is a fasta file of multiple amino acid sequences targets and a single SMILES representation of the drug. 
-        
+if os.getenv("DRUG_TARGET_BINDING_FASTA") == "true":
+
+    @mcp.tool()
+    async def drug_target_binding_fasta(
+        target_file: str, drug_sequence: str
+    ) -> dict[str, float]:
+        """
+        This tool predicts drug-target binding affinity using the fine-tuned model `ibm-research/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd`.
+
+        Expected input is a fasta file of multiple amino acid sequences targets and a single SMILES representation of the drug.
+
         Binding affinity for each sequence is predicted using pKd (the negative logarithm of the dissociation constant, reflecting the strength of the interaction between a sm molecule and protein)
-        
-        """    
-        return drug_target_pkd_prediction_fasta(target_file,drug_sequence)
+
+        """
+        return drug_target_pkd_prediction_fasta(target_file, drug_sequence)
+
 
 async def main():
     async with lifespan():
