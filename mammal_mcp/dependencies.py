@@ -84,7 +84,10 @@ async def lifespan():
             cache_dir="model_cache",
         )
 
-    if os.getenv("DRUG_TARGET_BINDING") == "true":
+    if (
+        os.getenv("DRUG_TARGET_BINDING") == "true"
+        or os.getenv("DRUG_TARGET_BINDING_FASTA") == "true"
+    ):
         logger.info("downloading: ibm/biomed.omics.bl.sm.ma-ted-458m.dti_bindingdb_pkd")
 
         drug_target_model = Mammal.from_pretrained(
