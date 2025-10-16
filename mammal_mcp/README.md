@@ -44,7 +44,9 @@ One of the easiest ways to experiment with the tools provided by mammal-mcp is t
 For that, update your Claude Desktop config file (located at `~/Library/Application Support/Claude/claude_desktop_config.json`) with the JSON below:
 
 ```json
-"mammal": {
+{
+  "mcpServers": {
+    "mammal": {
             "command": "<use output of `which uv` in the `mammal-mammal_mcp` folder>",
             "args": [
                 "--directory",
@@ -53,6 +55,10 @@ For that, update your Claude Desktop config file (located at `~/Library/Applicat
                 "server.py"
             ]
         }
+  }
+}
+
+
 ```
 
 **- Change both placeholders in this JSON indicated with <>**
