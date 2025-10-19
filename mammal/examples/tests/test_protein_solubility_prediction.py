@@ -12,12 +12,12 @@ TEST_CONFIG_DIRPATH = str(Path(__file__).parents[0] / "../protein_solubility")
 TEST_CONFIG_FILENAME = "config.yaml"
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True, scope="module")
 def _clean_hydra() -> None:
     GlobalHydra.instance().clear()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def model_dir(tmp_path_factory: pytest.TempPathFactory):
     if "ccc" not in socket.gethostname():
         pytest.skip("Full tests requires resources")

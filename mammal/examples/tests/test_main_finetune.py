@@ -38,26 +38,26 @@ OVERRIDES = [
 ] + STATIC_OVERRIDES
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def cfg_dict():
     with hydra.initialize_config_dir(TEST_CONFIG_DIRPATH, version_base="1.1"):
         _cfg = hydra.compose(TEST_CONFIG_FILENAME, overrides=OVERRIDES)
         yield _cfg
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def cfg_obj(cfg_dict):
     OmegaConf.register_new_resolver("num_cores_auto", num_available_cores, replace=True)
     cfg_obj = hydra.utils.instantiate(cfg_dict)
     return cfg_obj
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def cfg(cfg_obj):
     return cfg_obj
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def clearml_logger():
     return None
 
@@ -82,7 +82,7 @@ def test_seed():
     assert seed_value == original_seed_value
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def tokenizer_op(cfg_dict):
     # return ModularTokenizerOp.from_pretrained(cfg_dict.tokenizer.tokenizer_path)
     # The tokenizer is loaded with the extra special tokens, so we can check they are avaible
@@ -117,12 +117,12 @@ def test_tokenizer(tokenizer_op):
     tokenizer_op.get_token_id(never_seen_before)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def current_train_session_metadata():
     return {}
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def test_task(cfg_obj, clearml_logger, tokenizer_op):
     _task_list = cfg_obj.task(
         tokenizer_op=tokenizer_op,
@@ -131,13 +131,13 @@ def test_task(cfg_obj, clearml_logger, tokenizer_op):
     return _task_list
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def pl_data_module(test_task):
     """get lightning data module"""
     return test_task.data_module()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def pl_module(test_task, cfg):
     """get lightning module"""
     model = Mammal.from_pretrained(

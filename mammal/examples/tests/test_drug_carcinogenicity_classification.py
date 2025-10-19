@@ -13,18 +13,18 @@ TEST_CONFIG_DIRPATH = str(Path(__file__).parents[0] / "../carcinogenicity")
 TEST_CONFIG_FILENAME = "config.yaml"
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True, scope="module")
 def _clean_hydra() -> None:
     GlobalHydra.instance().clear()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def tmp_model_dir(tmp_path_factory):
     model_dir_path = tmp_path_factory.mktemp("test_carcinogenicity") / "test"
     return model_dir_path
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def finetuned_model_dir(tmp_model_dir: str):
     if "ccc" not in socket.gethostname():
         pytest.skip("Full tests requires resources")

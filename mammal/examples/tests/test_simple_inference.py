@@ -1,3 +1,4 @@
+import pytest
 import torch
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 
@@ -5,18 +6,26 @@ from mammal.keys import *
 from mammal.model import Mammal
 
 
-def test_simple_infer() -> None:
+@pytest.fixture(scope="module")
+def tmp_cache_dir(tmp_path_factory):
+    model_dir_path = tmp_path_factory.mktemp("simple_infer")
+    return model_dir_path
+
+
+def test_simple_infer(tmp_cache_dir: str) -> None:
     """
     A simple function that test the proposed inference example on HF, https://huggingface.co/ibm/biomed.omics.bl.sm.ma-ted-458m
     """
 
     # Load Model
-    model = Mammal.from_pretrained("ibm/biomed.omics.bl.sm.ma-ted-458m")
+    model = Mammal.from_pretrained(
+        "ibm/biomed.omics.bl.sm.ma-ted-458m", cache_dir=tmp_cache_dir
+    )
     model.eval()
 
     # Load Tokenizer
     tokenizer_op = ModularTokenizerOp.from_pretrained(
-        "ibm/biomed.omics.bl.sm.ma-ted-458m"
+        "ibm/biomed.omics.bl.sm.ma-ted-458m", cache_dir=tmp_cache_dir
     )
 
     # Prepare Input Prompt
