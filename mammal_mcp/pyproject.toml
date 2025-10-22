@@ -10,7 +10,6 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10, <3.12"
 dependencies = [
-    "biomed-multi-alignment>=0.2.1",
     "fastmcp>=2.6.1",
     "fuse-med-ml>=0.4.0",
     "mcp[cli]>=1.6.0",
@@ -25,12 +24,16 @@ dependencies = [
     "types-requests>=2.31.0.6",
     "uv>=0.6.11",
     "bio>=1.7.1",
+    "biomed-multi-alignment",
 ]
 
 [dependency-groups]
 dev = [
     "types-requests>=2.31.0.6",
 ]
+
+[tool.uv.sources]
+biomed-multi-alignment = { git = "https://github.com/BiomedSciAI/biomed-multi-alignment.git", rev = "v0.2.2" }
 
 [project.optional-dependencies]
 dev = [

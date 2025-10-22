@@ -9,11 +9,11 @@ from dependencies import assets, lifespan
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 from pydantic import BaseModel
-from tcr_epitope_binding_temp import task_infer
 from util import process_model_output
 
 from mammal.examples.dti_bindingdb_kd.task import DtiBindingdbKdTask
 from mammal.examples.protein_solubility.task import ProteinSolubilityTask
+from mammal.examples.tcr_epitope_binding.main_infer import task_infer
 from mammal.keys import (
     CLS_PRED,
     ENCODER_INPUTS_ATTENTION_MASK,
@@ -303,14 +303,14 @@ async def main():
     async with lifespan():
         # Initialize and run the server once assets are loaded
         if os.getenv("STREAMABLE_HTTP") == "true":
-            logger.info("starting up Open Targets MCP server with streamable-http...")
+            logger.info("starting up mammal MCP server with streamable-http...")
             await mcp.run_async(
                 transport="streamable-http",
                 host="127.0.0.1",
                 port=int(os.getenv("PORT")),
             )
         if os.getenv("SSE") == "true":
-            logger.info("starting up Open Targets MCP server with sse...")
+            logger.info("starting up mammal MCP server with sse...")
             await mcp.run_async(
                 transport="sse",
                 host="127.0.0.1",
