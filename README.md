@@ -172,8 +172,7 @@ Since many of the tasks on which **ibm/biomed.omics.bl.sm.ma-ted-458m** is train
 
 # Tutorials
 If you are interested in a specific guide / tutorial, feel free to [open an issue](https://github.com/BiomedSciAI/biomed-multi-alignment/issues/new).
-### Beginner
-* TBD
+
 ### Advanced
 * Create a new Mammal task. [[link](./tutorials/advanced_create_new_task.ipynb)]
 
