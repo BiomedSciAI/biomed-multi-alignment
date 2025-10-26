@@ -176,7 +176,6 @@ If you are interested in a specific guide / tutorial, feel free to [open an issu
 ### Advanced
 * Create a new Mammal task. [[link](./tutorials/advanced_create_new_task.ipynb)]
 
-
 # Citations
 If you find our work useful for your research, we ask you to cite the relevant papers:
 ```
