@@ -189,7 +189,7 @@ def drug_target_pkd_prediction_fasta(
     return result
 
 
-if os.getenv("PROTEIN_PROTEIN_INTERATION") == "true":
+if os.getenv("PROTEIN_PROTEIN_INTERACTION") == "true":
 
     @mcp.tool()
     async def protein_protein_interaction(

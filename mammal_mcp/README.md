@@ -133,7 +133,7 @@ When you start Claude for any task you will get JSON parsing related error messa
 
 - Expected input are the either the amino acid sequences of the two proteins or the protein names.
 
-- Ensure `PROTEIN_PROTEIN_INTERATION` is set to `true` in `.env` file
+- Ensure `PROTEIN_PROTEIN_INTERACTION` is set to `true` in `.env` file
 
 Example prompt:
 

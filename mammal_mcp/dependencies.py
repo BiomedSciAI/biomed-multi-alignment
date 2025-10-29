@@ -22,7 +22,7 @@ assets = {}
 
 @asynccontextmanager
 async def lifespan():
-    if os.getenv("PROTEIN_PROTEIN_INTERATION") == "true":
+    if os.getenv("PROTEIN_PROTEIN_INTERACTION") == "true":
         # Load Model
         logger.info("downloading: ibm/biomed.omics.bl.sm.ma-ted-458m")
         model = Mammal.from_pretrained(
