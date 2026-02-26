@@ -15,7 +15,7 @@ authors = [
   {name="IBM Research"},
   {name="Moshe Raboh", email="moshiko.raboh@ibm.com"}
   ]
-version = "0.2.2"
+version = "0.2.3"
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 # due to how PEP 440 defines version matching, prefer [incl, excl) definitions like below:
