@@ -17,7 +17,6 @@ import os
 import sys
 import tempfile
 from functools import partial
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -286,6 +285,8 @@ def load_model(
     model_path: str,
     base_model_path: str = "ibm/biomed.omics.bl.sm.ma-ted-458m",
     device: str = "cpu",
+    filename="last.ckpt",
+    revision="main",
 ) -> Mammal:
     """
     Load a finetuned MAMMAL model from a Lightning checkpoint.
@@ -299,9 +300,28 @@ def load_model(
         The inner ``Mammal`` model in eval mode on the requested device.
     """
     base_model = Mammal.from_pretrained(base_model_path)
+
+    model_dir = None
+    if os.path.exists(model_path):
+        if os.path.isdir(model_path):
+            model_dir = model_path
+            checkpoint_path = None
+        else:
+            checkpoint_path = model_path
+    else:
+        from huggingface_hub import hf_hub_download
+
+        checkpoint_path = hf_hub_download(
+            repo_id=model_path,
+            filename=filename,
+            revision=revision,
+        )
+
+    print(f"{checkpoint_path=}")
+
     pl_module = LightningModuleDefault.load_from_checkpoint(
-        checkpoint_path=model_path,
-        model_dir=None,
+        checkpoint_path=checkpoint_path,
+        model_dir=model_dir,
         model=base_model,
         map_location="cpu",
     )
