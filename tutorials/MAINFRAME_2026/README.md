@@ -12,8 +12,105 @@ These tutorials showcase two advanced molecular AI models applied to real-world 
 ## Datasets
 
 The tutorials use two screening datasets:
-- **PGK2 DEL**: PGK2 DNA-encoded library screening data
+- **PGK2 DEL**: Derived from PGK2 DNA-encoded library screening data
 - **WDR91 ASMS**: WDR91 affinity selection mass spectrometry data
+
+
+## Data Availability
+
+All datasets required for these tutorials are publicly available and can be downloaded from:
+
+**Source**: [https://www.aircheck.ai/datasets](https://www.aircheck.ai/datasets)
+**Location**: Navigate to the **"Datasets for Hands-on"** tab
+
+### WDR91 Dataset Files
+- **Training data**: `DREAM_Challenge_1_TrainSet.parquet`
+  - Contains molecular structures and binding labels for model development
+- **Evaluation data**: `DREAM_Target2035_Challenge_test_data.csv`
+  - Independent test set for model performance assessment
+
+### PGK2 Dataset Files
+- **Training data**: `PGK2_CDD.parquet`
+  - DNA-encoded library screening data from Baylor College of Medicine
+- **Evaluation data**: `PGK2_Creative.parquet`
+  - DNA-encoded library screening data from Creative Biolabs
+
+
+## Data Processing
+
+Before running the tutorials, the downloaded datasets must be preprocessed into the required format. All processed files should contain two columns: `smiles` (molecular structure) and `label` (binary classification target).
+
+### WDR91 Processing Steps
+
+1. **Split training data**: Randomly partition `DREAM_Challenge_1_TrainSet.parquet` into:
+   - Training set: 70%
+   - Validation set: 20%
+   - Test set: 10%
+
+   Save each split as CSV files with columns `smiles` and `label`:
+   - `wdr91/train.csv`
+   - `wdr91/val.csv`
+   - `wdr91/test.csv`
+
+2. **Prepare evaluation data**: Rename `DREAM_Target2035_Challenge_test_data.csv` to `wdr91_eval.csv` for consistency
+
+### PGK2 Processing Steps
+
+1. **Split training data**: Randomly partition `PGK2_CDD.parquet` into:
+   - Training set: 70%
+   - Validation set: 20%
+   - Test set: 10%
+
+   Save each split as CSV files with columns `smiles` and `label`:
+   - `pgk2/train.csv`
+   - `pgk2/val.csv`
+   - `pgk2/test.csv`
+
+2. **Prepare evaluation data**: Filter `PGK2_Creative.parquet` to remove any compounds present in the training set (to prevent data leakage), then save as `pgk2_creative.csv` with columns `smiles` and `label`
+
+**Note**: Ensure random seed is set for reproducibility when performing data splits.
+
+
+### Example Preprocessing Code
+
+```python
+import pandas as pd
+
+def preprocess_data(file_path, seed=42, train_frac=0.7, val_frac_of_remaining=2.0/3):
+    """
+    Split dataset into train, validation, and test sets.
+
+    Args:
+        file_path: Path to the parquet file
+        seed: Random seed for reproducibility
+        train_frac: Fraction of data for training (default: 0.7)
+        val_frac_of_remaining: Fraction of non-training data for validation (default: 2/3)
+                               With default values: 70% train, 20% val, 10% test
+
+    Returns:
+        train_df, val_df, test_df: DataFrames for each split
+    """
+    df = pd.read_parquet(file_path)
+
+    # Split training data
+    train_df = df.sample(frac=train_frac, random_state=seed)
+    val_test_df = df.drop(train_df.index)
+
+    # Split remaining data into validation and test
+    val_df = val_test_df.sample(frac=val_frac_of_remaining, random_state=seed)
+    test_df = val_test_df.drop(val_df.index)
+
+    return train_df, val_df, test_df
+
+# Example usage:
+# train_df, val_df, test_df = preprocess_data('DREAM_Challenge_1_TrainSet.parquet')
+#
+# # Rename columns and save splits to CSV files
+# splits = {'train': train_df, 'val': val_df, 'test': test_df}
+# for split_name, split_df in splits.items():
+#     split_df.rename(columns={'SMILES': 'smiles', 'LABEL': 'label'}, inplace=True)
+#     split_df.to_csv(f'wdr91/{split_name}.csv', index=False)
+```
 
 ## Notebooks
 
