@@ -174,10 +174,10 @@ def cell_line_drug_infer(
 
     sample_dict[ENCODER_INPUTS_TOKENS] = torch.tensor(
         sample_dict[ENCODER_INPUTS_TOKENS]
-    )
+    ).to(device)
     sample_dict[ENCODER_INPUTS_ATTENTION_MASK] = torch.tensor(
         sample_dict[ENCODER_INPUTS_ATTENTION_MASK]
-    )
+    ).to(device)
 
     # Forward pass
     batch_dict = model.forward_encoder_only([sample_dict])

@@ -170,6 +170,18 @@ To run the evaluation, run the following command:
 ```
 python mammal/main_finetune.py --config-name config.yaml --config-path  examples/dti_bindingdb_kd evaluate=True model.pretrained_kwargs.pretrained_model_name_or_path=<path to finetune output dir>/best_epoch.ckpt
 ```
+## Cell Line Drug Response Prediction
+Predicting drug response in cancer cell lines is crucial for personalized medicine and drug development.
+This example demonstrates inference using a fine-tuned MAMMAL model to predict IC50 values (half maximal inhibitory concentration) for drug-cell line combinations.
+The model takes as input both the drug's SMILES representation and the cell line's gene expression profile from an h5ad file, combining multi-modal information to predict drug efficacy.
+The gene expression data is processed by sorting genes by expression value and selecting the top genes, which are then formatted and tokenized along with the drug SMILES string.
+
+### Inference
+To run inference for a cell line and drug combination, use the following command:
+```
+python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to fine-tuned model> --cell_line_h5ad_file <path to h5ad file> --drug_smiles "<SMILES string>" --cell_line_name "<cell line name>" --drug_name "<drug name>" --device cpu
+```
+
 
 # Modular Tokenizer
 Since many of the tasks on which **ibm/biomed.omics.bl.sm.ma-ted-458m** is trained use different modalities (amino acid sequences, SMILES, gene expressions, etc.), we implemented a modular tokenizer that can combine multiple tokenizers, mapping their dictionaries to a consistent ID space (https://github.com/BiomedSciAI/fuse-med-ml/tree/master/fuse/data/tokenizers/modular_tokenizer).
