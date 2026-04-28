@@ -188,12 +188,12 @@ To run inference:
 
 **Using a GDSC cell line name (recommended for GDSC cell lines)**
 ```
-python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to finetune output dir> --cell_line_name <cell line name> --drug_smiles "<SMILES string>" --drug_name "<drug name>"
+python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to model output dir>/best_epoch.ckpt --cell_line_name <cell line name> --drug_smiles "<SMILES string>" --drug_name "<drug name>"
 ```
 
 **Using a custom h5ad file**
 ```
-python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to finetune output dir> --cell_line_h5ad_file <path to h5ad file> --drug_smiles "<SMILES string>" --drug_name "<drug name>"
+python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to finetune output dir>/best_epoch.ckpt --cell_line_h5ad_file <path to h5ad file> --drug_smiles "<SMILES string>" --drug_name "<drug name>"
 ```
 
 ### Evaluation

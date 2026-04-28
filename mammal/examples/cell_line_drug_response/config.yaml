@@ -2,7 +2,7 @@
 # Uses GDSC datasets (GDSC1 or GDSC2) from TDC for training MAMMAL on IC50 prediction
 
 name: mammal_cldr_gdsc2_seed_1234
-root: "/dccstor/bmfmbio7/users/sivanra/results/MAMMAL"
+root: "."
 model_dir: ${root}/${name}
 seed: 1234
 
