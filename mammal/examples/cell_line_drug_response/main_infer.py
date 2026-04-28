@@ -1,3 +1,4 @@
+import anndata as ad
 import click
 import numpy as np
 import scanpy as sc
@@ -71,9 +72,17 @@ def main(
             "Provide only one of --cell_line_h5ad_file or --cell_line_name"
         )
 
+    # Load cell line data as AnnData object
     if cell_line_name is not None:
         print(f"Loading cell line '{cell_line_name}' from GDSC2")
-        cell_line_h5ad_file = load_gdsc_cell_line(cell_line_name)
+        adata = load_gdsc_cell_line(cell_line_name)
+    elif cell_line_h5ad_file is not None:
+        print(f"Loading cell line from h5ad file: {cell_line_h5ad_file}")
+        adata = sc.read_h5ad(cell_line_h5ad_file)
+    else:
+        raise ValueError(
+            "Either cell_line_name or cell_line_h5ad_file must be provided"
+        )
 
     model = Mammal.from_pretrained(model_path)
     model.eval()
@@ -90,7 +99,7 @@ def main(
     prediction = cell_line_drug_infer(
         model=model,
         tokenizer_op=tokenizer_op,
-        h5ad_file=cell_line_h5ad_file,
+        adata=adata,
         drug_smiles=drug_smiles,
         device=device,
     )
@@ -108,19 +117,16 @@ def main(
     print("=" * 80)
 
 
-def load_gdsc_cell_line(cell_line_id: str) -> str:
+def load_gdsc_cell_line(cell_line_id: str) -> ad.AnnData:
     """
-    Load a cell line from GDSC2 and save as temporary h5ad file.
+    Load a cell line from GDSC2 and return as AnnData object.
 
     Args:
         cell_line_id: Cell line identifier (e.g., "A549", "FADU")
 
     Returns:
-        Path to temporary h5ad file
+        AnnData object containing gene expression data
     """
-    import tempfile
-
-    import anndata as ad
     import pandas as pd
     from tdc.multi_pred import DrugRes
 
@@ -146,17 +152,13 @@ def load_gdsc_cell_line(cell_line_id: str) -> str:
         obs=pd.DataFrame({"cell_line_id": [cell_line_id]}, index=[cell_line_id]),
     )
 
-    temp_file = tempfile.NamedTemporaryFile(suffix=".h5ad", delete=False)
-    adata.write_h5ad(temp_file.name)
-    print(f"Saved to temporary file: {temp_file.name}")
-
-    return temp_file.name
+    return adata
 
 
 def cell_line_drug_infer(
     model,
     tokenizer_op,
-    h5ad_file: str,
+    adata: ad.AnnData,
     drug_smiles: str,
     device: str = "cpu",
 ):
@@ -165,7 +167,7 @@ def cell_line_drug_infer(
 
     :param model: Pre-loaded MAMMAL model
     :param tokenizer_op: Pre-loaded tokenizer
-    :param h5ad_file: Path to h5ad file containing gene expression data
+    :param adata: AnnData object containing gene expression data
     :param drug_smiles: SMILES representation of the drug
     :param device: Device to use for inference
     :return: Prediction value
@@ -175,7 +177,6 @@ def cell_line_drug_infer(
     format_length = 5
     max_genes = encoder_inputs_max_seq_len - truncation_offset - format_length
 
-    adata = sc.read_h5ad(h5ad_file)
     genes = adata.var_names.tolist()
 
     if adata.n_obs > 0:
@@ -184,7 +185,7 @@ def cell_line_drug_infer(
         else:
             expressions = np.array(adata.X[0]).flatten()
     else:
-        raise ValueError(f"No cells found in {h5ad_file}")
+        raise ValueError("No cells found in AnnData object")
 
     sample_dict = {
         "genes": genes,
