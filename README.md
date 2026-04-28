@@ -171,15 +171,35 @@ To run the evaluation, run the following command:
 python mammal/main_finetune.py --config-name config.yaml --config-path  examples/dti_bindingdb_kd evaluate=True model.pretrained_kwargs.pretrained_model_name_or_path=<path to finetune output dir>/best_epoch.ckpt
 ```
 ## Cell Line Drug Response Prediction
-Predicting drug response in cancer cell lines is crucial for personalized medicine and drug development.
-This example demonstrates inference using a fine-tuned MAMMAL model to predict IC50 values (half maximal inhibitory concentration) for drug-cell line combinations.
-The model takes as input both the drug's SMILES representation and the cell line's gene expression profile from an h5ad file, combining multi-modal information to predict drug efficacy.
-The gene expression data is processed by sorting genes by expression value and selecting the top genes, which are then formatted and tokenized along with the drug SMILES string.
+Predicting drug response in cancer cell lines is crucial for personalized medicine and drug development. This example demonstrates finetuning `ibm/biomed.omics.bl.sm-ted-458` to predict IC50 values (half maximal inhibitory concentration) for drug-cell line combinations.
+The model takes as input both the drug's SMILES representation and the cell line's gene expression profile. The gene expression data is processed by sorting genes by descending expression value and selecting the top expressed genes , which are then formatted and tokenized along with the drug SMILES string.
+
+The benchmark is based on GDSC (Genomics of Drug Sensitivity in Cancer) datasets from TDC: https://tdcommons.ai/multi_pred_tasks/drugres/.
+
+### Finetune
+To finetune from pre-trained MAMMAL, run the following command:
+```
+python mammal/main_finetune.py --config-name config.yaml --config-path  examples/cell_line_drug_response
+```
+The configuration file allows you to select between GDSC1 or GDSC2 datasets by modifying the `dataset_name` parameter in `config.yaml`.
 
 ### Inference
-To run inference for a cell line and drug combination, use the following command:
+To run inference:
+
+**Using a GDSC cell line name (recommended for GDSC cell lines)**
 ```
-python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to fine-tuned model> --cell_line_h5ad_file <path to h5ad file> --drug_smiles "<SMILES string>" --cell_line_name "<cell line name>" --drug_name "<drug name>" --device cpu
+python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to finetune output dir> --cell_line_name <cell line name> --drug_smiles "<SMILES string>" --drug_name "<drug name>"
+```
+
+**Using a custom h5ad file**
+```
+python mammal/examples/cell_line_drug_response/main_infer.py --model_path <path to finetune output dir> --cell_line_h5ad_file <path to h5ad file> --drug_smiles "<SMILES string>" --drug_name "<drug name>"
+```
+
+### Evaluation
+To run the evaluation, use the following command:
+```
+python mammal/main_finetune.py --config-name config.yaml --config-path  examples/cell_line_drug_response evaluate=True model.pretrained_kwargs.pretrained_model_name_or_path=<path to finetune output dir>/best_epoch.ckpt
 ```
 
 

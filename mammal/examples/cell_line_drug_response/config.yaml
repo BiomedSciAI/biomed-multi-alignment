@@ -1,0 +1,85 @@
+# Configuration for Cell Line Drug Response Fine-Tuning
+# Uses GDSC datasets (GDSC1 or GDSC2) from TDC for training MAMMAL on IC50 prediction
+
+name: mammal_cldr_gdsc2_seed_1234
+root: "/dccstor/bmfmbio7/users/sivanra/results/MAMMAL"
+model_dir: ${root}/${name}
+seed: 1234
+
+task:
+  _target_: mammal.examples.cell_line_drug_response.task.CellLineDrugResponseTask
+  _partial_: True
+  name: cell_line_drug_response
+  seed: ${seed}
+
+  data_module_kwargs:
+    dataset_name: "GDSC2"  # or "GDSC1"
+    dataset_path: null  # TDC will download if not specified
+    limit_samples: null  # Set a number for quick testing on a subset of the data (e.g., 100)
+    batch_size: 4
+    encoder_input_max_seq_len: 1560
+    train_dl_kwargs:
+      num_workers: 8
+    valid_dl_kwargs:
+      num_workers: 8
+
+# Tokenizer configuration
+tokenizer:
+  tokenizer_path: ibm/biomed.omics.bl.sm.ma-ted-458m
+
+# Model configuration
+model:
+  mammal_kwargs: null  # arguments for Mammal.__init__()
+  pretrained_kwargs:  # arguments for Mammal.from_pretrained()
+    pretrained_model_name_or_path: ibm/biomed.omics.bl.sm.ma-ted-458m
+
+# Training module configuration
+module:
+  opt_callable:
+    _target_: torch.optim.AdamW
+    _partial_: true
+    lr: 0.00001
+    # weight_decay: 0.01  # Optional
+
+  lr_sch_callable:
+    _target_: mammal.lr_schedulers.cosine_annealing_with_warmup_lr_scheduler
+    _partial_: True
+    T_max: 10000
+    # num_warmup_steps: 300  # Optional
+    eta_min_factor: 0.1
+
+  model_dir: ${model_dir}
+  best_epoch_source:
+    # arguments for pytorch_lightning.callbacks.ModelCheckpoint()
+    monitor: validation.metrics.cell_line_drug_response_mse  # possible options are validation.metrics.<task_name>_<metric_name>
+    mode: min
+
+# PyTorch Lightning Trainer configuration
+trainer:
+  max_epochs: 100
+  default_root_dir: ${model_dir}
+  accelerator: "auto"
+  devices: 1
+  num_nodes: 1
+  strategy: "ddp_find_unused_parameters_true"
+  use_distributed_sampler: False
+  num_sanity_val_steps: 0
+  # gradient_clip_val: 1.0  # Optional
+  # log_every_n_steps: 50  # Optional
+
+# ClearML tracking (optional)
+track_clearml:
+  project_name: "mammal/opensource"
+  task_name: ${name}
+  tags: ["mammal", "drug_response", "ic50", "gdsc"]
+  reuse_last_task_id: False
+  continue_last_task: False
+  offline_mode: False
+
+evaluate: false
+
+hydra:
+  run:
+    dir: ${model_dir}
+  job:
+    chdir: False

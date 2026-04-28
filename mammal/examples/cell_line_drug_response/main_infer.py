@@ -1,17 +1,11 @@
 import click
 import numpy as np
 import scanpy as sc
-import torch
 from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 from scipy.sparse import issparse
 
-from mammal.keys import (
-    ENCODER_INPUTS_ATTENTION_MASK,
-    ENCODER_INPUTS_SCALARS,
-    ENCODER_INPUTS_STR,
-    ENCODER_INPUTS_TOKENS,
-    SCALARS_PREDICTION_HEAD_LOGITS,
-)
+from mammal.examples.cell_line_drug_response.task import CellLineDrugResponseTask
+from mammal.keys import SCALARS_PREDICTION_HEAD_LOGITS
 from mammal.model import Mammal
 
 
@@ -23,18 +17,18 @@ from mammal.model import Mammal
 )
 @click.option(
     "--cell_line_h5ad_file",
-    required=True,
+    default=None,
     help="Path to h5ad file containing gene expression data",
+)
+@click.option(
+    "--cell_line_name",
+    default=None,
+    help="Name of the cell line to load from tdc/GDSC2, Alternative to --cell_line_h5ad_file",
 )
 @click.option(
     "--drug_smiles",
     required=True,
     help="SMILES representation of the drug",
-)
-@click.option(
-    "--cell_line_name",
-    default=None,
-    help="Name of the cell line (optional, for display only)",
 )
 @click.option(
     "--drug_name",
@@ -48,27 +42,43 @@ from mammal.model import Mammal
 )
 def main(
     model_path: str,
-    cell_line_h5ad_file: str,
-    drug_smiles: str,
+    cell_line_h5ad_file: str | None,
     cell_line_name: str | None,
+    drug_smiles: str,
     drug_name: str | None,
     device: str,
 ):
     """
     Perform inference for a single cell line and drug combination.
 
-    Example:
-        python main_infer.py --model_path /path/to/model
-        --cell_line_h5ad_file /path/to/A549.h5ad
-        --drug_smiles "CC(=O)NCCC1=CNc2c1cc(OC)cc2"
-        --cell_line_name "A549" --drug_name "Melatonin"
+    Examples:
+        # Using h5ad file
+        python main_infer.py --model_path /path/to/model \
+            --cell_line_h5ad_file /path/to/A549.h5ad \
+            --drug_smiles "CC(=O)NCCC1=CNc2c1cc(OC)cc2"
+
+        # Using GDSC2 cell line name
+        python main_infer.py --model_path /path/to/model \
+            --cell_line_name A549 \
+            --drug_smiles "CC(=O)NCCC1=CNc2c1cc(OC)cc2"
     """
-    # Load Model
+    if cell_line_h5ad_file is None and cell_line_name is None:
+        raise ValueError(
+            "Must provide either --cell_line_h5ad_file or --cell_line_name"
+        )
+    if cell_line_h5ad_file is not None and cell_line_name is not None:
+        raise ValueError(
+            "Provide only one of --cell_line_h5ad_file or --cell_line_name"
+        )
+
+    if cell_line_name is not None:
+        print(f"Loading cell line '{cell_line_name}' from GDSC2")
+        cell_line_h5ad_file = load_gdsc_cell_line(cell_line_name)
+
     model = Mammal.from_pretrained(model_path)
     model.eval()
     model.to(device=device)
 
-    # Load Tokenizer
     tokenizer_op = ModularTokenizerOp.from_pretrained(
         "ibm/biomed.omics.bl.sm.ma-ted-458m"
     )
@@ -77,7 +87,6 @@ def main(
     print("Model and tokenizer loaded successfully.")
     print("=" * 80)
 
-    # Run inference
     prediction = cell_line_drug_infer(
         model=model,
         tokenizer_op=tokenizer_op,
@@ -86,25 +95,62 @@ def main(
         device=device,
     )
 
-    # Print result
     print("\n" + "=" * 80)
     print("PREDICTION RESULT:")
     print("=" * 80)
     if cell_line_name:
         print(f"Cell Line: {cell_line_name}")
+    if cell_line_h5ad_file:
+        print(f"Cell Line: {cell_line_h5ad_file}")
     if drug_name:
         print(f"Drug: {drug_name}")
     print(f"Predicted IC50: {prediction:.6f}")
     print("=" * 80)
 
 
-def sort_genes_by_value_and_name(genes, expressions):
+def load_gdsc_cell_line(cell_line_id: str) -> str:
     """
-    sort by both the expression value (as int in reverse order) and names in lexical order.
+    Load a cell line from GDSC2 and save as temporary h5ad file.
+
+    Args:
+        cell_line_id: Cell line identifier (e.g., "A549", "FADU")
+
+    Returns:
+        Path to temporary h5ad file
     """
-    joined_vals = zip(expressions, genes)
-    sorted_list = sorted(joined_vals, key=lambda x: (-int(x[0]), x[1]))
-    return [gene for (_, gene) in sorted_list]
+    import tempfile
+
+    import anndata as ad
+    import pandas as pd
+    from tdc.multi_pred import DrugRes
+
+    data = DrugRes(name="GDSC2")
+    df = data.get_data()
+
+    cell_line_data = df[df["Cell Line_ID"] == cell_line_id]
+
+    if len(cell_line_data) == 0:
+        raise ValueError(f"Cell line '{cell_line_id}' not found in GDSC2")
+
+    print(f"Found {len(cell_line_data)} drug responses for {cell_line_id}")
+
+    expression = cell_line_data.iloc[0]["Cell Line"]
+    if not isinstance(expression, np.ndarray):
+        expression = np.array(expression)
+
+    gene_symbols = list(data.get_gene_symbols())
+
+    adata = ad.AnnData(
+        X=expression.reshape(1, -1),
+        var=pd.DataFrame(index=gene_symbols),
+        obs=pd.DataFrame({"cell_line_id": [cell_line_id]}, index=[cell_line_id]),
+    )
+
+    temp_file = tempfile.NamedTemporaryFile(suffix=".h5ad", delete=False)
+    adata.write_h5ad(temp_file.name)
+    print(f"Saved to temporary file: {temp_file.name}")
+
+    return temp_file.name
 
 
 def cell_line_drug_infer(
@@ -124,21 +170,15 @@ def cell_line_drug_infer(
     :param device: Device to use for inference
     :return: Prediction value
     """
-    # Configuration parameters (matching training config)
     encoder_inputs_max_seq_len = 1500
     truncation_offset = 200
     format_length = 5
     max_genes = encoder_inputs_max_seq_len - truncation_offset - format_length
 
-    # Read h5ad file
     adata = sc.read_h5ad(h5ad_file)
-
-    # Extract gene names and expression values
     genes = adata.var_names.tolist()
 
-    # Use the first cell's expression
     if adata.n_obs > 0:
-        # Handle sparse matrices
         if issparse(adata.X):
             expressions = np.array(adata.X[0].todense()).flatten()
         else:
@@ -146,50 +186,31 @@ def cell_line_drug_infer(
     else:
         raise ValueError(f"No cells found in {h5ad_file}")
 
-    # Sort and truncate genes
-    gene_seq = sort_genes_by_value_and_name(genes, expressions)[:max_genes]
-    gene_seq_formatted = [f"[{gene}]" for gene in gene_seq]
-
-    # Prepare Input Prompt
-    sample_dict = dict()
-    sample_dict[ENCODER_INPUTS_STR] = (
-        "<@TOKENIZER-TYPE=SMILES><MASK>"
-        + f"<@TOKENIZER-TYPE=SMILES><MOLECULAR_ENTITY><MOLECULAR_ENTITY_SMALL_MOLECULE><SMILES_SEQUENCE>{drug_smiles}"
-        + "<@TOKENIZER-TYPE=GENE><MOLECULAR_ENTITY><MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED>"
-        + "".join(gene_seq_formatted)
-        + "<EOS>"
-    )
-
-    # Tokenize
-    tokenizer_op(
+    sample_dict = {
+        "genes": genes,
+        "expressions": expressions,
+        "smiles": drug_smiles,
+    }
+    sample_dict = CellLineDrugResponseTask.data_preprocessing(
         sample_dict=sample_dict,
-        key_in=ENCODER_INPUTS_STR,
-        key_out_tokens_ids=ENCODER_INPUTS_TOKENS,
-        key_out_attention_mask=ENCODER_INPUTS_ATTENTION_MASK,
-        key_out_scalars=ENCODER_INPUTS_SCALARS,
-        max_seq_len=encoder_inputs_max_seq_len,
-        on_unknown="warn",
-        verbose=0,
+        genes_key="genes",
+        expressions_key="expressions",
+        drug_smiles_key="smiles",
+        tokenizer_op=tokenizer_op,
+        encoder_input_max_seq_len=encoder_inputs_max_seq_len,
+        max_genes=max_genes,
+        device=model.device,
     )
 
-    sample_dict[ENCODER_INPUTS_TOKENS] = torch.tensor(
-        sample_dict[ENCODER_INPUTS_TOKENS]
-    ).to(device)
-    sample_dict[ENCODER_INPUTS_ATTENTION_MASK] = torch.tensor(
-        sample_dict[ENCODER_INPUTS_ATTENTION_MASK]
-    ).to(device)
-
-    # Forward pass
     batch_dict = model.forward_encoder_only([sample_dict])
 
-    # Extract prediction - get the first scalar prediction
     if SCALARS_PREDICTION_HEAD_LOGITS in batch_dict:
         predictions_full = batch_dict[SCALARS_PREDICTION_HEAD_LOGITS][0]
         prediction = predictions_full[0].squeeze().item()
         return prediction
-    else:
-        print("WARNING: No prediction found")
-        return None
+
+    print("WARNING: No prediction found")
+    return None
 
 
 if __name__ == "__main__":
