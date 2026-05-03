@@ -90,15 +90,56 @@ class CellLineDrugResponseTask(MammalTask):
         drug_smiles_key: str,
         ground_truth_key: str | None = None,
         tokenizer_op: ModularTokenizerOp,
-        encoder_input_max_seq_len: int = 1560,
-        max_genes: int = 1295,
+        encoder_input_max_seq_len: int = 1500,
         device: str | torch.device = "cpu",
     ) -> dict:
+        """
+        Preprocess cell line drug response sample for MAMMAL model input.
+
+        Transforms raw cell line gene expression data and drug SMILES strings into tokenized sequences suitable for the MAMMAL encoder.
+        Genes are sorted by expression value and name before truncation to prioritize highly expressed genes.
+        A truncation_offset of 200 tokens is reserved for SMILES representation. PAD tokens in labels are replaced with -100 to be ignored
+        during loss computation.
+        The input sequence format is:
+        <MASK><SMILES_SEQUENCE>{drug_smiles}<MOLECULAR_ENTITY_CELL_GENE_EXPRESSION_RANKED>[gene1][gene2]...<EOS>
+
+        Args:
+            sample_dict: Dictionary containing raw sample data with keys specified by
+                genes_key, expressions_key, drug_smiles_key, and optionally ground_truth_key.
+                This dictionary is modified in-place with tokenized outputs.
+            genes_key: Key in sample_dict for list of gene names/symbols.
+            expressions_key: Key in sample_dict for gene expression values corresponding
+                to genes in genes_key.
+            drug_smiles_key: Key in sample_dict for drug SMILES string representation.
+            ground_truth_key: Optional key in sample_dict for IC50 ground truth value.
+                If None or not present, labels are not generated (inference mode).
+            tokenizer_op: MAMMAL modular tokenizer operator for converting strings to tokens.
+            encoder_input_max_seq_len: Maximum sequence length for encoder input. Default 1500.
+                Genes are truncated to fit within this limit after reserving space for
+                SMILES tokens and formatting tokens.
+            device: Target device for tensors ('cpu', 'cuda', or torch.device). Default 'cpu'.
+
+        Returns:
+            dict: The modified sample_dict with added keys:
+                - ENCODER_INPUTS_STR: Formatted input string for tokenization
+                - ENCODER_INPUTS_TOKENS: Tokenized input IDs (torch.Tensor)
+                - ENCODER_INPUTS_ATTENTION_MASK: Attention mask for inputs (torch.Tensor)
+                - ENCODER_INPUTS_SCALARS: Scalar values extracted during tokenization
+                If ground_truth_key is provided:
+                - LABELS_STR: Formatted label string
+                - LABELS_TOKENS: Tokenized label IDs with PAD replaced by -100 (torch.Tensor)
+                - LABELS_ATTENTION_MASK: Attention mask for labels (torch.Tensor)
+                - LABELS_SCALARS_VALUES: Ground truth IC50 value (torch.Tensor)
+                - LABELS_SCALARS_VALID_MASK: Mask indicating valid scalar positions (torch.Tensor)
+        """
         genes = sample_dict[genes_key]
         expressions = sample_dict[expressions_key]
         drug_smiles = sample_dict[drug_smiles_key]
         ground_truth_value = sample_dict.get(ground_truth_key, None)
 
+        truncation_offset = 200  # leave space for SMILES tokens
+        format_length = 6
+        max_genes = encoder_input_max_seq_len - truncation_offset - format_length
         genes_sorted = sort_genes_by_value_and_name(expressions, genes)[:max_genes]
         genes_formatted = [f"[{gene}]" for gene in genes_sorted]
 

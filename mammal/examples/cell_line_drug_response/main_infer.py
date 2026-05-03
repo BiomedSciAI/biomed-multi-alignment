@@ -173,10 +173,6 @@ def cell_line_drug_infer(
     :return: Prediction value
     """
     encoder_inputs_max_seq_len = 1500
-    truncation_offset = 200
-    format_length = 5
-    max_genes = encoder_inputs_max_seq_len - truncation_offset - format_length
-
     genes = adata.var_names.tolist()
 
     if adata.n_obs > 0:
@@ -199,7 +195,6 @@ def cell_line_drug_infer(
         drug_smiles_key="smiles",
         tokenizer_op=tokenizer_op,
         encoder_input_max_seq_len=encoder_inputs_max_seq_len,
-        max_genes=max_genes,
         device=model.device,
     )
 

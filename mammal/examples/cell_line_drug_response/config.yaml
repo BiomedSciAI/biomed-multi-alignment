@@ -16,12 +16,12 @@ task:
     dataset_name: "GDSC2"  # or "GDSC1"
     dataset_path: null  # TDC will download if not specified
     limit_samples: null  # Set a number for quick testing on a subset of the data (e.g., 100)
-    batch_size: 4
-    encoder_input_max_seq_len: 1560
+    batch_size: 8
+    encoder_input_max_seq_len: 1500 # max sequence length for encoder input including both genes and smiles tokens
     train_dl_kwargs:
-      num_workers: 8
+      num_workers: 16
     valid_dl_kwargs:
-      num_workers: 8
+      num_workers: 16
 
 # Tokenizer configuration
 tokenizer:
@@ -64,6 +64,7 @@ trainer:
   strategy: "ddp_find_unused_parameters_true"
   use_distributed_sampler: False
   num_sanity_val_steps: 0
+  accumulate_grad_batches: 4
   # gradient_clip_val: 1.0  # Optional
   # log_every_n_steps: 50  # Optional
 
