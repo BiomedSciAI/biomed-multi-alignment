@@ -172,7 +172,8 @@ python mammal/main_finetune.py --config-name config.yaml --config-path  examples
 ```
 ## Cell Line Drug Response Prediction
 Predicting drug response in cancer cell lines is crucial for personalized medicine and drug development. This example demonstrates finetuning `ibm/biomed.omics.bl.sm-ted-458` to predict IC50 values (half maximal inhibitory concentration) for drug-cell line combinations.
-The model takes as input both the drug's SMILES representation and the cell line's gene expression profile. The gene expression data is processed by sorting genes by descending expression value and selecting the top expressed genes , which are then formatted and tokenized along with the drug SMILES string.
+The model takes as input both the drug's SMILES representation and the cell line's gene expression profile. The gene expression data is processed by sorting genes by descending expression value and selecting the top expressed genes, which are then formatted and tokenized along with the drug SMILES string.
+
 
 The benchmark is based on GDSC (Genomics of Drug Sensitivity in Cancer) datasets from TDC: https://tdcommons.ai/multi_pred_tasks/drugres/.
 
@@ -181,7 +182,7 @@ To finetune from pre-trained MAMMAL, run the following command:
 ```
 python mammal/main_finetune.py --config-name config.yaml --config-path  examples/cell_line_drug_response
 ```
-The configuration file allows you to select between GDSC1 or GDSC2 datasets by modifying the `dataset_name` parameter in `config.yaml`.
+The fine tuning example code is tailored for GDSC datasset format, configuration file allows you to select between GDSC1 or GDSC2 datasets by modifying the `dataset_name` parameter in `config.yaml`.
 
 ### Inference
 To run inference:
