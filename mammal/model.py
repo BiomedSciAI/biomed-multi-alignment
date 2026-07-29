@@ -19,20 +19,31 @@ from mammal.keys import *  # noqa
 from mammal.lora import get_lora_model
 
 
-def backfill_config_defaults(config: PretrainedConfig | None) -> None:
+def normalize_t5_config(t5_config: T5Config) -> T5Config:
     """
-    Restore attributes that transformers>=5 added to `PretrainedConfig` onto a config
-    that never ran `__init__`/`__post_init__` - e.g. one unpickled from a transformers 4
-    era checkpoint, which is missing them all.
+    Bring a `T5Config` up to the shape transformers>=5 expects, in place.
+
+    A config that never ran `__post_init__` - unpickled from a transformers 4 era `.ckpt`,
+    or assembled in code - lacks the fields transformers 5 added, several of which
+    `T5ForConditionalGeneration.forward` dereferences. Filling them from a freshly built
+    `PretrainedConfig` covers fields added by later releases too.
     """
-    if config is None:
-        return
-    state = config.__dict__
-    # Renamed in transformers>=5. Mapped before the defaults so stored values win.
-    state.setdefault("_output_attentions", state.get("output_attentions", None))
-    state.setdefault("dtype", state.pop("torch_dtype", None))
+    state = t5_config.__dict__
+    tied = bool(state.get("tie_word_embeddings"))
+
+    if "torch_dtype" in state:  # renamed in transformers>=5
+        state.setdefault("dtype", state.pop("torch_dtype"))
+    # `output_attentions` became a property over this private field.
+    state.setdefault("_output_attentions", state.get("output_attentions"))
+    # Derived by `__post_init__`, so not among the inherited defaults below.
+    state.setdefault("scale_decoder_outputs", tied)
     for key, value in PretrainedConfig().__dict__.items():
         state.setdefault(key, value)
+
+    # MAMMAL's `lm_head` is untied, but `__post_init__` forces this True. Re-assert it
+    # here, where the model relies on it, rather than trusting how the config was built.
+    t5_config.tie_word_embeddings = False
+    return t5_config
 
 
 @dataclass
@@ -99,12 +110,6 @@ class MammalConfig(PretrainedConfig):
         config = cls(**{**config_dict, "t5_config": t5_config})
         return config
 
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        """Unpickling hook - the `.ckpt` path in `from_pretrained` restores configs here."""
-        self.__dict__.update(state)
-        backfill_config_defaults(self)
-        backfill_config_defaults(self.__dict__.get("t5_config"))
-
     @classmethod
     def from_path(
         cls, config_filepath: str, *, allow_config_mismatch: bool = False
@@ -165,19 +170,7 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         super().__init__()
         self.config = config
 
-        t5_config = self.config.t5_config
-        # Also back-fill here, not just in `__setstate__`: a config assembled in code
-        # likewise skips `__post_init__`. `forward` dereferences several of these fields.
-        backfill_config_defaults(t5_config)
-        # Derived by `T5Config.__post_init__`, so the generic back-fill can't supply it.
-        if not hasattr(t5_config, "scale_decoder_outputs"):
-            t5_config.scale_decoder_outputs = (
-                getattr(t5_config, "tie_word_embeddings", False) is not False
-            )
-        # `__post_init__` forces this True; re-assert the untied `lm_head` where it's
-        # relied on rather than trusting how the config was built.
-        t5_config.tie_word_embeddings = False
-
+        t5_config = normalize_t5_config(self.config.t5_config)
         self.t5_model = T5ForConditionalGeneration(config=t5_config)
 
         # transformers>=5 refactored T5 so the encoder/decoder input-embedding
