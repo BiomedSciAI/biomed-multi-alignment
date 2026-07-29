@@ -22,19 +22,13 @@ from mammal.lora import get_lora_model
 def backfill_config_defaults(config: PretrainedConfig | None) -> None:
     """
     Restore attributes that transformers>=5 added to `PretrainedConfig` onto a config
-    unpickled from a transformers 4 era checkpoint.
-
-    Unpickling runs neither `__init__` nor `__post_init__`, so every field introduced by
-    transformers 5 is simply absent from the restored object, and the first v5 code path
-    to dereference one raises `AttributeError`. Back-filling from a freshly built
-    `PretrainedConfig` picks up new fields automatically instead of naming them one at a
-    time. Legacy values are mapped first so they win over the defaults.
+    that never ran `__init__`/`__post_init__` - e.g. one unpickled from a transformers 4
+    era checkpoint, which is missing them all.
     """
     if config is None:
         return
     state = config.__dict__
-    # Renamed in transformers>=5; `output_attentions` became a property over the private
-    # field, and `torch_dtype` became `dtype`.
+    # Renamed in transformers>=5. Mapped before the defaults so stored values win.
     state.setdefault("_output_attentions", state.get("output_attentions", None))
     state.setdefault("dtype", state.pop("torch_dtype", None))
     for key, value in PretrainedConfig().__dict__.items():
@@ -107,11 +101,7 @@ class MammalConfig(PretrainedConfig):
         return config
 
     def __setstate__(self, state: dict[str, Any]) -> None:
-        """
-        Unpickling hook - the `.ckpt` path in `Mammal.from_pretrained` restores this
-        config with `torch.load(weights_only=False)`, so a checkpoint written by
-        transformers 4 arrives here missing every field transformers 5 added.
-        """
+        """Unpickling hook - the `.ckpt` path in `from_pretrained` restores configs here."""
         self.__dict__.update(state)
         backfill_config_defaults(self)
         backfill_config_defaults(self.__dict__.get("t5_config"))
@@ -177,22 +167,16 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         self.config = config
 
         t5_config = self.config.t5_config
-        # A config that reached us without going through `__post_init__` - unpickled from
-        # a transformers 4 era `.ckpt`, or assembled in code - is missing the fields
-        # transformers 5 added, several of which `forward` dereferences unconditionally.
-        # Repeat the back-fill here as well as in `__setstate__` so it holds however the
-        # config was built.
+        # Also back-fill here, not just in `__setstate__`: a config assembled in code
+        # likewise skips `__post_init__`. `forward` dereferences several of these fields.
         backfill_config_defaults(t5_config)
-        # `scale_decoder_outputs` is derived by `T5Config.__post_init__` rather than
-        # inherited from `PretrainedConfig`, so the generic back-fill can't supply it.
+        # Derived by `T5Config.__post_init__`, so the generic back-fill can't supply it.
         if not hasattr(t5_config, "scale_decoder_outputs"):
             t5_config.scale_decoder_outputs = (
                 getattr(t5_config, "tie_word_embeddings", False) is not False
             )
-        # `__post_init__` forces `tie_word_embeddings` True, so re-assert this model's
-        # untied `lm_head` here, where it's relied on, rather than trusting how the
-        # config was built. See the discussion on PR #54 as to whether this should warn
-        # when a caller deliberately asked for a tied head.
+        # `__post_init__` forces this True; re-assert the untied `lm_head` where it's
+        # relied on rather than trusting how the config was built.
         t5_config.tie_word_embeddings = False
 
         self.t5_model = T5ForConditionalGeneration(config=t5_config)
