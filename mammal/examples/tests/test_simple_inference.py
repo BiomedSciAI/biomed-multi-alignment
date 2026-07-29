@@ -55,3 +55,9 @@ def test_simple_infer() -> None:
     # Get output
     generated_output = tokenizer_op._tokenizer.decode(batch_dict[CLS_PRED][0])
     print(f"{generated_output=}")
+
+    # Guard the exact decoded prediction. This catches silent regressions where
+    # the model still runs but produces wrong tokens (e.g. an embedding/lm_head
+    # weight-tying mismatch would yield a degenerate output like repeated
+    # `<SENTINEL_ID_0>` instead of the expected binding-affinity class prediction).
+    assert generated_output == "<SENTINEL_ID_0><1><EOS>", generated_output

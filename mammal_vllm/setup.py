@@ -16,9 +16,11 @@ setup(
     packages=find_packages(),
     python_requires=">=3.10",
     install_requires=[
-        "vllm>=0.4.0",
-        "torch>=2.0.0",
-        "transformers>=4.40.0,<5",
+        # vLLM 0.24.0 is the first release to support transformers 5.x
+        # (it pins transformers>=5.5.3). vLLM 0.24-0.26 hard-pin torch==2.11.0.
+        "vllm>=0.24.0",
+        "torch>=2.11.0",
+        "transformers>=5.5.3,<6",
     ],
     extras_require={
         "mammal": [

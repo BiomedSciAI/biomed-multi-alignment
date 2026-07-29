@@ -19,6 +19,33 @@ from mammal.keys import *  # noqa
 from mammal.lora import get_lora_model
 
 
+def normalize_t5_config(t5_config: T5Config) -> T5Config:
+    """
+    Bring a `T5Config` up to the shape transformers>=5 expects, in place.
+
+    A config that never ran `__post_init__` - unpickled from a transformers 4 era `.ckpt`,
+    or assembled in code - lacks the fields transformers 5 added, several of which
+    `T5ForConditionalGeneration.forward` dereferences. Filling them from a freshly built
+    `PretrainedConfig` covers fields added by later releases too.
+    """
+    state = t5_config.__dict__
+    tied = bool(state.get("tie_word_embeddings"))
+
+    if "torch_dtype" in state:  # renamed in transformers>=5
+        state.setdefault("dtype", state.pop("torch_dtype"))
+    # `output_attentions` became a property over this private field.
+    state.setdefault("_output_attentions", state.get("output_attentions"))
+    # Derived by `__post_init__`, so not among the inherited defaults below.
+    state.setdefault("scale_decoder_outputs", tied)
+    for key, value in PretrainedConfig().__dict__.items():
+        state.setdefault(key, value)
+
+    # MAMMAL's `lm_head` is untied, but `__post_init__` forces this True. Re-assert it
+    # here, where the model relies on it, rather than trusting how the config was built.
+    t5_config.tie_word_embeddings = False
+    return t5_config
+
+
 @dataclass
 class MammalConfig(PretrainedConfig):
     """
@@ -69,8 +96,18 @@ class MammalConfig(PretrainedConfig):
 
         # We want to instantiate each class from it's dict (json), using the parent class logic
         # HF don't support the case where there are nested *different* configs.
-        config_dict["t5_config"] = T5Config.from_dict(config_dict["t5_config"])
-        config = cls(**config_dict)
+        t5_config_dict = config_dict["t5_config"]
+        t5_config = T5Config.from_dict(t5_config_dict)
+        # transformers>=5 ignores `tie_word_embeddings` when it is supplied through
+        # `from_dict`/kwargs and always falls back to the class default (True). This
+        # model has an *untied* LM head (`lm_head` differs from the input embeddings),
+        # so restore the stored value explicitly - otherwise the model ties `lm_head`
+        # to `shared`, overwriting the real LM-head weights and corrupting generation.
+        if "tie_word_embeddings" in t5_config_dict:
+            t5_config.tie_word_embeddings = t5_config_dict["tie_word_embeddings"]
+        # Copy rather than assigning into `config_dict`, which would leave the caller
+        # holding a `T5Config` where it had a dict and break any second use of it.
+        config = cls(**{**config_dict, "t5_config": t5_config})
         return config
 
     @classmethod
@@ -132,7 +169,18 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         """
         super().__init__()
         self.config = config
-        self.t5_model = T5ForConditionalGeneration(config=self.config.t5_config)
+
+        t5_config = normalize_t5_config(self.config.t5_config)
+        self.t5_model = T5ForConditionalGeneration(config=t5_config)
+
+        # transformers>=5 refactored T5 so the encoder/decoder input-embedding
+        # tables are shared with `shared` only when tie_word_embeddings is True.
+        # This model keeps `lm_head` untied (tie_word_embeddings=False) but still
+        # needs the encoder/decoder inputs to use the single shared embedding
+        # table (which `get_input_embeddings()` returns and which the checkpoint
+        # only stores once). Re-establish that sharing explicitly; on transformers
+        # 4.x the encoder/decoder already share `shared`, so this is a no-op.
+        self.t5_model.set_input_embeddings(self.t5_model.get_input_embeddings())
 
         if getattr(self.config, "support_input_scalars", False):
             self.project_input_scalars = torch.nn.Linear(
@@ -183,11 +231,13 @@ class Mammal(ModelHubMixin, torch.nn.Module):
             **generate_kwargs,
         )
 
+        # transformers>=5 removed the legacy per-strategy output aliases
+        # (BeamSearch/GreedySearch/Sample/BeamSample*EncoderDecoderOutput). They
+        # collapse into two encoder-decoder classes, which also exist in
+        # transformers 4.x, so this stays compatible with both.
         MODEL_OUTPUT_SEARCH_TYPES = (
-            transformers.generation.utils.BeamSearchEncoderDecoderOutput,  # ModelOutput
-            transformers.generation.utils.GreedySearchEncoderDecoderOutput,
-            transformers.generation.utils.SampleEncoderDecoderOutput,
-            transformers.generation.utils.BeamSampleEncoderDecoderOutput,
+            transformers.generation.utils.GenerateEncoderDecoderOutput,  # greedy + sample
+            transformers.generation.utils.GenerateBeamEncoderDecoderOutput,  # beam + beam-sample
         )
 
         # depending generate_kwargs, different types can be returned from model.generate(...)
@@ -408,6 +458,9 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         :param config_overrides: load config, but override specific fields from mammal MammalConfig.
                                   The dictionary should only include the fields to override.
         """
+        # `Path` is accepted per the signature, but the checks below are string based.
+        pretrained_model_name_or_path = str(pretrained_model_name_or_path)
+
         if not os.path.exists(pretrained_model_name_or_path):
             print(
                 f"Path doesn't exist. Will try to download from hf hub. {pretrained_model_name_or_path=}"
