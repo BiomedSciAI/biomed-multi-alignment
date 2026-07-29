@@ -141,7 +141,20 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         """
         super().__init__()
         self.config = config
-        self.t5_model = T5ForConditionalGeneration(config=self.config.t5_config)
+
+        t5_config = self.config.t5_config
+        # transformers>=5 derives `scale_decoder_outputs` in `T5Config.__post_init__`,
+        # which unpickling a transformers 4 era config doesn't run - and `forward`
+        # dereferences it unconditionally. `tie_word_embeddings` is forced True there,
+        # so re-assert this model's untied `lm_head` here, where it's relied on, rather
+        # than trusting how the config was built.
+        if not hasattr(t5_config, "scale_decoder_outputs"):
+            t5_config.scale_decoder_outputs = (
+                getattr(t5_config, "tie_word_embeddings", False) is not False
+            )
+        t5_config.tie_word_embeddings = False
+
+        self.t5_model = T5ForConditionalGeneration(config=t5_config)
 
         # transformers>=5 refactored T5 so the encoder/decoder input-embedding
         # tables are shared with `shared` only when tie_word_embeddings is True.
@@ -428,6 +441,9 @@ class Mammal(ModelHubMixin, torch.nn.Module):
         :param config_overrides: load config, but override specific fields from mammal MammalConfig.
                                   The dictionary should only include the fields to override.
         """
+        # `Path` is accepted per the signature, but the checks below are string based.
+        pretrained_model_name_or_path = str(pretrained_model_name_or_path)
+
         if not os.path.exists(pretrained_model_name_or_path):
             print(
                 f"Path doesn't exist. Will try to download from hf hub. {pretrained_model_name_or_path=}"
