@@ -66,13 +66,11 @@ class MammalConfig(PretrainedConfig):
         if "t5_config" not in config_dict:
             raise ValueError(f"config_dict should have key 't5_config'. {config_dict=}")
 
-        # We don't want to change the incoming dict - `t5_config` is replaced with a
-        # `T5Config` object below, which would otherwise leave the caller holding an
-        # object where it had a dict and break any second use of it.
-        config_dict = copy.deepcopy(config_dict)
-
         if allow_config_mismatch:
             # Allowing to load the model even if the incoming config dict has unexpected key(s)
+            config_dict = copy.deepcopy(
+                config_dict
+            )  # We don't want to change the incoming dict
             mismatch_keys = []
             for incoming_config_key in list(config_dict.keys()):
                 if incoming_config_key not in cls.__dataclass_fields__:
@@ -96,8 +94,9 @@ class MammalConfig(PretrainedConfig):
         # to `shared`, overwriting the real LM-head weights and corrupting generation.
         if "tie_word_embeddings" in t5_config_dict:
             t5_config.tie_word_embeddings = t5_config_dict["tie_word_embeddings"]
-        config_dict["t5_config"] = t5_config
-        config = cls(**config_dict)
+        # Copy rather than assigning into `config_dict`, which would leave the caller
+        # holding a `T5Config` where it had a dict and break any second use of it.
+        config = cls(**{**config_dict, "t5_config": t5_config})
         return config
 
     def __setstate__(self, state: dict[str, Any]) -> None:
