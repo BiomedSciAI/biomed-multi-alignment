@@ -1,7 +1,7 @@
 """
 tests/compare_embeddings.py
 ----------------------------
-ECompare embeddings from vLLM plugin vs direct MAMMAL model.
+Compare embeddings from vLLM plugin vs direct MAMMAL model.
 This test requires GPU and both vllm-mammal-plugin and mammal packages installed.
 
 
@@ -22,14 +22,6 @@ import time
 
 import numpy as np
 import torch
-from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
-from mammal.keys import (
-    ENCODER_INPUTS_ATTENTION_MASK,
-    ENCODER_INPUTS_TOKENS,
-)
-from mammal.model import Mammal
-from vllm import LLM
-
 from examples.example_prompts import (
     GENE_BRCA1,
     GENE_MALAT1,
@@ -39,6 +31,14 @@ from examples.example_prompts import (
     SMILES_CAFFEINE,
     SMILES_ETHER,
 )
+from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
+from vllm import LLM
+
+from mammal.keys import (
+    ENCODER_INPUTS_ATTENTION_MASK,
+    ENCODER_INPUTS_TOKENS,
+)
+from mammal.model import Mammal
 
 MODEL_NAME = "ibm-research/biomed.omics.bl.sm.ma-ted-458m"
 

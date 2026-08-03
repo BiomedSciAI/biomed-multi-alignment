@@ -7,6 +7,7 @@ No GPU, no network, no model weights required.
 
 import pytest
 
+
 class TestPluginRegistration:
     """Verify that the plugin entry-point and model class are importable."""
 

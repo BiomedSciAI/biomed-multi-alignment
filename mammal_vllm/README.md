@@ -16,21 +16,19 @@ MAMMAL is a 458M-parameter T5-style encoder-decoder model trained on over 2 bill
 
 ## Installation
 
-### Prerequisites
+The vLLM plugin is part of the `biomed-multi-alignment` package and is installed via the `vllm` extra.
 
-This plugin requires [uv](https://docs.astral.sh/uv/) for package management. If you don't have it installed:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
 ### From source
 
 ```bash
-# Navigate to the mammal_vllm directory
-cd /path/to/biomed-multi-alignment/mammal_vllm
+git clone git@github.com:BiomedSciAI/biomed-multi-alignment.git
+pip install -e "./biomed-multi-alignment[vllm]"
+```
 
-# Install with all dependencies
-pip install -e .
+### From PyPI
+
+```bash
+pip install "biomed-multi-alignment[vllm]"
 ```
 
 ### Verification
@@ -42,7 +40,7 @@ from vllm_mammal_plugin import register_mammal_model
 print("Plugin successfully installed!")
 ```
 
-vLLM auto-discovers the plugin via the `entry_points` mechanism defined in `pyproject.toml`.
+vLLM auto-discovers the plugin via the `vllm.general_plugins` entry point declared in the root `pyproject.toml`.
 
 ---
 
@@ -81,9 +79,7 @@ Key points:
 - Use the OpenAI client with the `/v1/embeddings` endpoint
 - Embeddings are L2-normalized
 
----
-
-## MAMMAL Input Format
+### MAMMAL Input Format
 
 See [`examples/example_prompts.py`](examples/example_prompts.py) for pre-formatted example prompts.
 
@@ -97,22 +93,10 @@ See [`examples/example_prompts.py`](examples/example_prompts.py) for pre-formatt
 pytest tests/ -v
 ```
 
-### Run only CPU tests (no GPU, no model download)
-
-```bash
-pytest tests/test_registration.py tests/test_example_prompts.py -v
-```
-
-### Run GPU tests explicitly
-
-```bash
-pytest tests/test_embeddings.py tests/test_compare_embeddings.py -v
-```
-
 ### Embedding comparison benchmark
 
 `compare_embeddings.py` is a standalone benchmark script (not collected by
-pytest) that prints timing and similarity metrics for all modalities:
+pytest) that compares embeddings produced by the vLLM plugin with those generated directly by the MAMMAL model. It reports timing and embedding similarity metrics across all supported modalities.
 
 ```bash
 # Offline vLLM vs direct MAMMAL
@@ -124,12 +108,14 @@ COMPARE_ONLINE=true python tests/compare_embeddings.py
 
 ## Project Structure
 
+This directory lives inside the `biomed-multi-alignment` repo.
+
 ```
 mammal_vllm/
 ├── vllm_mammal_plugin/
 │   ├── __init__.py              # Plugin registration, tokenizer + renderer registration
 │   ├── mammal.py                # Model implementation
-│   └── tokenization.py         # MammalTokenizer (TokenizerLike wrapper)
+│   └── tokenization.py          # MammalTokenizer (TokenizerLike wrapper)
 ├── examples/
 │   ├── __init__.py              # Package marker
 │   ├── example_prompts.py       # Pre-formatted example prompts
@@ -144,7 +130,5 @@ mammal_vllm/
 │   ├── test_embeddings.py       # vLLM offline embeddings (GPU)
 │   └── test_compare_embeddings.py  # vLLM vs MAMMAL comparison (GPU)
 ├── __init__.py                  # Root package marker
-├── pyproject.toml               # Project configuration
-├── setup.py                     # Setup script
 └── README.md                    # This file
 ```

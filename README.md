@@ -46,7 +46,22 @@ Follow the next steps to install MAMMAL in a new environment:
    pip install biomed-multi-alignment[examples]
    ```
 
+### Optional extras
 
+| Extra | What it adds | Install command |
+|---|---|---|
+| `examples` | Example tasks spanning multiple domains, including fine-tuning and inference | `pip install "biomed-multi-alignment[examples]"` |
+| `vllm` | vLLM plugin for high-throughput embedding inference via `vllm_mammal_plugin` | `pip install "biomed-multi-alignment[vllm]"` |
+
+To install multiple extras at once:
+```
+pip install "biomed-multi-alignment[examples,vllm]"
+```
+
+### MCP server
+
+This repository also includes the [`mammal_mcp`](mammal_mcp/README.md) subproject, which provides an MCP server for exposing MAMMAL inference tools to AI agents.
+See the MCP-specific setup and usage instructions in [`mammal_mcp/README.md`](mammal_mcp/README.md).
 
 
 # Examples

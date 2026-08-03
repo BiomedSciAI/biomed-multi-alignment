@@ -9,7 +9,6 @@ from vllm.logger import init_logger
 from vllm.model_executor.models.registry import ModelRegistry
 from vllm.renderers.registry import RENDERER_REGISTRY
 from vllm.tokenizers import TokenizerRegistry
-
 from vllm_mammal_plugin.mammal import MammalConfig
 
 __version__ = "0.1.0"

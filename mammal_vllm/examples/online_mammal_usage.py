@@ -19,13 +19,12 @@ Then run this script:
 """
 
 import numpy as np
-from openai import OpenAI
-
 from examples.example_prompts import (
     GENE_BRCA1,
     PROTEIN_CALMODULIN,
     SMILES_ASPIRIN,
 )
+from openai import OpenAI
 
 
 def main():

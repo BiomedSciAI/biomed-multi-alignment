@@ -37,12 +37,22 @@ examples = [
   "anndata",
   "click",
 ]
+vllm = [
+  "vllm>=0.26.0",
+  "torch>=2.0.0",
+]
 
 [project.urls]
 repository = "https://github.com/BiomedSciAI/biomed-multi-alignment"
 
+[project.entry-points."vllm.general_plugins"]
+mammal = "vllm_mammal_plugin:register_mammal_model"
+
 [tool.setuptools.packages]
-find = {}
+find = {exclude = ["mammal_vllm.vllm_mammal_plugin", "mammal_vllm.vllm_mammal_plugin.*"]}
+
+[tool.setuptools.package-dir]
+"vllm_mammal_plugin" = "mammal_vllm/vllm_mammal_plugin"
 
 [tool.ruff]
 target-version = "py310"
@@ -89,6 +99,19 @@ exclude_lines = ["pragma: no cover", "abc.abstractmethod", "@abstract"]
 
 #[tool.coverage.run]
 #omit = ["gene_benchmark/tests/*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "requires_gpu: mark test as requiring a CUDA-capable GPU (skipped when torch.cuda.is_available() is False)",
+]
+filterwarnings = [
+    # torch internals used by vllm — not actionable from this codebase
+    "ignore:`torch.jit.script_method` is deprecated:DeprecationWarning",
+    # fuse ModularTokenizerOp internals — max_token_id is an upper-bound placeholder by design
+    "ignore:max_token_id does not correspond to a token:UserWarning",
+    # fuse modular tokenizer — unknown tokens are expected for cross-modality inputs
+    "ignore:Encountered unknown tokens in input:UserWarning",
+]
 
 [tool.mypy]
 disable_error_code = [

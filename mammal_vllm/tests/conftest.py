@@ -17,7 +17,7 @@ import torch
 # Make package root importable
 # ---------------------------------------------------------------------------
 _PKG_ROOT = Path(__file__).parent.parent  # …/mammal_vllm/
-_TESTS_DIR = Path(__file__).parent        # …/mammal_vllm/tests/
+_TESTS_DIR = Path(__file__).parent  # …/mammal_vllm/tests/
 for _p in (_PKG_ROOT, _TESTS_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))

@@ -6,7 +6,6 @@ Requires a network connection on first run to download the tokenizer weights.
 """
 
 import pytest
-
 from examples.example_prompts import (
     GENE_BRCA1,
     PROTEIN_CALMODULIN,
@@ -82,5 +81,4 @@ class TestTokenization:
 # Run tests
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    import pytest
     pytest.main([__file__, "-v"])

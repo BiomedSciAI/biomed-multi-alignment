@@ -10,7 +10,6 @@ this file validates their structure cheaply with no GPU or network required.
 """
 
 import pytest
-
 from examples.example_prompts import (
     GENE_BRCA1,
     GENE_MALAT1,

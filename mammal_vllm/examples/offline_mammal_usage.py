@@ -6,13 +6,12 @@ Usage:
 """
 
 import numpy as np
-from vllm import LLM
-
 from examples.example_prompts import (
     GENE_BRCA1,
     PROTEIN_CALMODULIN,
     SMILES_ASPIRIN,
 )
+from vllm import LLM
 
 
 def main():

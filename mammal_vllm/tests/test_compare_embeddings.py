@@ -31,7 +31,6 @@ import os
 import numpy as np
 import pytest
 import torch
-
 from compare_embeddings import (
     MODEL_NAME,
     cosine_similarity,
@@ -74,6 +73,7 @@ ALL_PROMPT_NAMES: list[str] = [
 # Session-scoped fixtures — models loaded once per pytest run
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
 def vllm_embeddings() -> list[np.ndarray]:
     if not torch.cuda.is_available():
@@ -102,11 +102,13 @@ def online_vllm_embeddings() -> list[np.ndarray] | None:
         return embeddings
     except Exception:
         pytest.skip("COMPARE_ONLINE requested but online vLLM server not reachable")
+        return None
 
 
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.requires_gpu
 class TestEmbeddingComparison:
@@ -119,7 +121,7 @@ class TestEmbeddingComparison:
         Automatically skipped without a GPU (see conftest.py).
     """
 
-    @pytest.mark.parametrize("idx,name", list(enumerate(ALL_PROMPT_NAMES)))
+    @pytest.mark.parametrize(("idx", "name"), list(enumerate(ALL_PROMPT_NAMES)))
     def test_vllm_vs_mammal_cosine_similarity(
         self,
         vllm_embeddings: list[np.ndarray],
@@ -129,11 +131,11 @@ class TestEmbeddingComparison:
     ) -> None:
         """Cosine similarity between vLLM and MAMMAL embeddings must exceed 0.95."""
         sim = cosine_similarity(vllm_embeddings[idx], mammal_embeddings[idx])
-        assert sim > 0.95, (
-            f"{name}: vLLM vs MAMMAL cosine similarity too low ({sim:.6f})"
-        )
+        assert (
+            sim > 0.95
+        ), f"{name}: vLLM vs MAMMAL cosine similarity too low ({sim:.6f})"
 
-    @pytest.mark.parametrize("idx,name", list(enumerate(ALL_PROMPT_NAMES)))
+    @pytest.mark.parametrize(("idx", "name"), list(enumerate(ALL_PROMPT_NAMES)))
     def test_vllm_vs_mammal_embedding_shapes_match(
         self,
         vllm_embeddings: list[np.ndarray],
@@ -147,7 +149,7 @@ class TestEmbeddingComparison:
             f"vLLM {vllm_embeddings[idx].shape} vs MAMMAL {mammal_embeddings[idx].shape}"
         )
 
-    @pytest.mark.parametrize("idx,name", list(enumerate(ALL_PROMPT_NAMES)))
+    @pytest.mark.parametrize(("idx", "name"), list(enumerate(ALL_PROMPT_NAMES)))
     def test_online_vs_mammal_cosine_similarity(
         self,
         online_vllm_embeddings: list[np.ndarray] | None,
@@ -159,9 +161,9 @@ class TestEmbeddingComparison:
         if online_vllm_embeddings is None:
             pytest.skip("COMPARE_ONLINE not set — online server comparison skipped")
         sim = cosine_similarity(online_vllm_embeddings[idx], mammal_embeddings[idx])
-        assert sim > 0.95, (
-            f"{name}: online vLLM vs MAMMAL cosine similarity too low ({sim:.6f})"
-        )
+        assert (
+            sim > 0.95
+        ), f"{name}: online vLLM vs MAMMAL cosine similarity too low ({sim:.6f})"
 
     def test_vllm_embeddings_are_finite(
         self, vllm_embeddings: list[np.ndarray]

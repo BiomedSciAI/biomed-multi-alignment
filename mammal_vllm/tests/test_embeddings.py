@@ -11,7 +11,6 @@ Test vLLM offline embedding generation.
 
 import numpy as np
 import pytest
-
 from examples.example_prompts import (
     GENE_BRCA1,
     PROTEIN_CALMODULIN,
@@ -49,7 +48,7 @@ class TestVLLMEmbeddings:
         )
 
     @pytest.mark.parametrize(
-        "prompt,label",
+        ("prompt", "label"),
         [
             (PROTEIN_CALMODULIN, "Calmodulin"),
             (SMILES_ASPIRIN, "Aspirin"),
@@ -68,7 +67,9 @@ class TestVLLMEmbeddings:
         assert not np.isinf(embedding).any(), f"{label}: embedding contains Inf"
 
         norm = np.linalg.norm(embedding)
-        assert 0.99 < norm < 1.01, f"{label}: embedding not L2-normalised (norm={norm:.6f})"
+        assert (
+            0.99 < norm < 1.01
+        ), f"{label}: embedding not L2-normalised (norm={norm:.6f})"
 
     def test_different_modalities_produce_distinct_embeddings(self, llm) -> None:
         """Embeddings from different modalities must not be nearly identical."""
