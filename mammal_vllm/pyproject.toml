@@ -37,3 +37,11 @@ testpaths = ["tests"]
 markers = [
     "requires_gpu: mark test as requiring a CUDA-capable GPU (skipped when torch.cuda.is_available() is False)",
 ]
+filterwarnings = [
+    # torch internals used by vllm — not actionable from this codebase
+    "ignore:`torch.jit.script_method` is deprecated:DeprecationWarning",
+    # fuse ModularTokenizerOp internals — max_token_id is an upper-bound placeholder by design
+    "ignore:max_token_id does not correspond to a token:UserWarning",
+    # fuse modular tokenizer — unknown tokens are expected for cross-modality inputs
+    "ignore:Encountered unknown tokens in input:UserWarning",
+]

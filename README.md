@@ -6,8 +6,6 @@
 
 # biomed-multi-alignment
 
-**Update - MCP is now supported for MAMMAL agent integration visit [here](./mammal_mcp/README.md) for more information.**
-
 We introduce [**ibm/biomed.omics.bl.sm.ma-ted-458m**](https://arxiv.org/abs/2410.22367).
 A biomedical foundation model trained on over 2 billion biological samples across multiple modalities, including proteins, small molecules, and single-cell gene expression data.
 Designed for robust performance, it achieves state-of-the-art results on a variety of tasks across the entire drug discovery pipeline and diverse biomedical domains.

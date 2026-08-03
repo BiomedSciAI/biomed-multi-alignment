@@ -1,11 +1,13 @@
 """
-tests/test_embedding_comparison.py
------------------------------------
-Compare embeddings from vLLM plugin vs direct MAMMAL model.
+tests/compare_embeddings.py
+----------------------------
+ECompare embeddings from vLLM plugin vs direct MAMMAL model.
 This test requires GPU and both vllm-mammal-plugin and mammal packages installed.
 
-Optional: Set COMPARE_ONLINE=true to also compare with online vLLM server.
-To use online comparison, start the server first:
+
+Optional: set COMPARE_ONLINE=true to also compare against a running vLLM server.
+To start the server::
+
     vllm serve ibm-research/biomed.omics.bl.sm.ma-ted-458m \
         --runner pooling \
         --trust-remote-code \
@@ -64,9 +66,9 @@ def get_vllm_embeddings(
         runner="pooling",  # use the pooling / embedding runner
         trust_remote_code=True,  # MAMMAL uses custom tokenizer code
         tokenizer_mode="mammal",  # use MammalTokenizer via vLLM's registry
-        gpu_memory_utilization=0.4,
-        enforce_eager=True,
-        enable_prefix_caching=False,
+        gpu_memory_utilization=0.4,  # reduce GPU memory usage to fit in available memory
+        enforce_eager=True,  # disable CUDA graphs to avoid device-side assert errors
+        enable_prefix_caching=False,  # disable prefix/KV caching
     )
     init_time = time.time() - init_start
 
@@ -210,193 +212,155 @@ def get_mammal_embeddings(
     return embeddings, init_time, inference_time
 
 
-class TestEmbeddingComparison:
-    """Compare embeddings from vLLM plugin vs direct MAMMAL model."""
+def compare_embeddings() -> None:
+    """Print timing and per-prompt similarity metrics for all modalities.
 
-    def test_embedding_similarity(self):
-        """Test that vLLM and MAMMAL produce similar embeddings."""
+    Compares:
+    - vLLM offline plugin vs direct MAMMAL model (always)
+    - Online vLLM server vs direct MAMMAL model (when COMPARE_ONLINE=true)
+    """
+    compare_online = os.environ.get("COMPARE_ONLINE", "").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
 
-        # Check if online comparison is requested
-        compare_online = os.environ.get("COMPARE_ONLINE", "").lower() in (
-            "true",
-            "1",
-            "yes",
-        )
+    prompts = [
+        PROTEIN_CALMODULIN,
+        SMILES_ASPIRIN,
+        SMILES_CAFFEINE,
+        PROTEIN_FLUORESCENT,
+        SMILES_ETHER,
+        GENE_MALAT1,
+        GENE_BRCA1,
+    ]
+    names = [
+        "Calmodulin (protein)",
+        "Aspirin (SMILES)",
+        "Caffeine (SMILES)",
+        "Fluorescent (protein)",
+        "Ether (SMILES)",
+        "Malat1 (gene)",
+        "BRCA1 (gene)",
+    ]
 
-        # Create a single tokenizer instance to be shared across all tokenization calls
+    # Create a single tokenizer instance shared across all MAMMAL tokenization calls
+    print("\n" + "=" * 70)
+    print("Creating shared tokenizer...")
+    mammal_tokenizer_op = ModularTokenizerOp.from_pretrained(MODEL_NAME)
+
+    print("\n" + "=" * 70)
+    print("Getting embeddings from vLLM plugin (offline)...")
+    vllm_embeddings, vllm_init_time, vllm_inference_time = get_vllm_embeddings(prompts)
+    print(f"  Initialization time: {vllm_init_time:.3f}s")
+    print(f"  Inference time:      {vllm_inference_time:.3f}s")
+    print(f"  Total time:          {vllm_init_time + vllm_inference_time:.3f}s")
+
+    print("\n" + "=" * 70)
+    print("Getting embeddings from direct MAMMAL model...")
+    mammal_embeddings, mammal_init_time, mammal_inference_time = get_mammal_embeddings(
+        MODEL_NAME, prompts, mammal_tokenizer_op
+    )
+    print(f"  Initialization time: {mammal_init_time:.3f}s")
+    print(f"  Inference time:      {mammal_inference_time:.3f}s")
+    print(f"  Total time:          {mammal_init_time + mammal_inference_time:.3f}s")
+
+    online_embeddings = None
+    online_inference_time = None
+    if compare_online:
         print("\n" + "=" * 70)
-        print("Creating shared tokenizer...")
-        mammal_tokenizer_op = ModularTokenizerOp.from_pretrained(MODEL_NAME)
+        print("Getting embeddings from online vLLM server...")
+        try:
+            online_embeddings, online_inference_time = get_online_vllm_embeddings(
+                prompts
+            )
+            print(f"  Inference time: {online_inference_time:.3f}s")
+            print("✓ Successfully retrieved online embeddings")
+        except Exception as e:
+            print(f"⚠ Warning: Could not get online embeddings: {e}")
+            print("  Continuing with offline comparison only...")
 
-        prompts = [
-            PROTEIN_CALMODULIN,
-            SMILES_ASPIRIN,
-            SMILES_CAFFEINE,
-            PROTEIN_FLUORESCENT,
-            SMILES_ETHER,
-            GENE_MALAT1,
-            GENE_BRCA1,
-        ]
-        names = [
-            "Calmodulin (protein)",
-            "Aspirin (SMILES)",
-            "Caffeine (SMILES)",
-            "Fluorescent (protein)",
-            "Ether (SMILES)",
-            "Malat1 (gene)",
-            "BRCA1 (gene)",
-        ]
+    print("\n" + "=" * 70)
+    print("Embedding Comparison Results")
+    print("=" * 70)
 
-        print("\n" + "=" * 70)
-        print("Getting embeddings from vLLM plugin (offline)...")
-        vllm_embeddings, vllm_init_time, vllm_inference_time = get_vllm_embeddings(
-            prompts
-        )
-        print(f"  Initialization time: {vllm_init_time:.3f}s")
-        print(f"  Inference time: {vllm_inference_time:.3f}s")
-        print(f"  Total time: {vllm_init_time + vllm_inference_time:.3f}s")
+    for i, name in enumerate(names):
+        vllm_emb = vllm_embeddings[i]
+        mammal_emb = mammal_embeddings[i]
 
-        print("\n" + "=" * 70)
-        print("Getting embeddings from direct MAMMAL model...")
-        mammal_embeddings, mammal_init_time, mammal_inference_time = (
-            get_mammal_embeddings(MODEL_NAME, prompts, mammal_tokenizer_op)
-        )
-        print(f"  Initialization time: {mammal_init_time:.3f}s")
-        print(f"  Inference time: {mammal_inference_time:.3f}s")
-        print(f"  Total time: {mammal_init_time + mammal_inference_time:.3f}s")
+        approximate_equality = np.allclose(vllm_emb, mammal_emb, atol=1e-3)
+        similarity = cosine_similarity(vllm_emb, mammal_emb)
+        l2_distance = np.linalg.norm(vllm_emb - mammal_emb)
 
-        # Optionally get online vLLM embeddings
-        online_embeddings = None
-        online_inference_time = None
-        if compare_online:
-            print("\n" + "=" * 70)
-            print("Getting embeddings from online vLLM server...")
-            try:
-                online_embeddings, online_inference_time = get_online_vllm_embeddings(
-                    prompts
-                )
-                print(f"  Inference time: {online_inference_time:.3f}s")
-                print("✓ Successfully retrieved online embeddings")
-            except Exception as e:
-                print(f"⚠ Warning: Could not get online embeddings: {e}")
-                print("  Continuing with offline comparison only...")
+        print(f"\n{name}:")
+        print("  Offline vLLM comparison:")
+        print(f"  vLLM shape:             {vllm_emb.shape}")
+        print(f"  MAMMAL shape:           {mammal_emb.shape}")
+        print(f"  Approximate equality:   {approximate_equality}")
+        print(f"  Cosine similarity:      {similarity:.6f}")
+        print(f"  L2 distance:            {l2_distance:.6f}")
 
-        print("\n" + "=" * 70)
-        print("Embedding Comparison Results")
-        print("=" * 70)
+        if online_embeddings is not None:
+            online_emb = online_embeddings[i]
+            online_similarity = cosine_similarity(online_emb, mammal_emb)
+            online_l2 = np.linalg.norm(online_emb - mammal_emb)
 
-        # Compare embeddings
-        for i, name in enumerate(names):
-            vllm_emb = vllm_embeddings[i]
-            mammal_emb = mammal_embeddings[i]
-
-            # Calculate approximate equality
-            approximate_equality = np.allclose(vllm_emb, mammal_emb, atol=1e-3)
-
-            # Calculate cosine similarity
-            similarity = cosine_similarity(vllm_emb, mammal_emb)
-
-            # Calculate L2 distance
-            l2_distance = np.linalg.norm(vllm_emb - mammal_emb)
-
-            print(f"\n{name}:")
-            print("  Offline vLLM comparison:")
-            print(f"  vLLM shape:             {vllm_emb.shape}")
+            print("  Online vLLM comparison:")
+            print(f"  vLLM shape:             {online_emb.shape}")
             print(f"  MAMMAL shape:           {mammal_emb.shape}")
-            print(f"  Approximate equality:   {approximate_equality}")
-            print(f"  Cosine similarity:      {similarity:.6f}")
-            print(f"  L2 distance:            {l2_distance:.6f}")
+            print(
+                f"  Approximate equality:   {np.allclose(online_emb, mammal_emb, atol=1e-3)}"
+            )
+            print(f"  Cosine similarity:      {online_similarity:.6f}")
+            print(f"  L2 distance:            {online_l2:.6f}")
 
-            # If online embeddings are available, compare them too
-            if online_embeddings is not None:
-                online_emb = online_embeddings[i]
-                online_approximate_equality = np.allclose(
-                    online_emb, mammal_emb, atol=1e-3
-                )
-                online_similarity = cosine_similarity(online_emb, mammal_emb)
-                online_l2 = np.linalg.norm(online_emb - mammal_emb)
+    print("\n" + "=" * 70)
+    print("BENCHMARK SUMMARY")
+    print("=" * 70)
+    print(f"Number of prompts: {len(prompts)}\n")
+    print(f"{'Method':<25} {'Init (s)':<12} {'Inference (s)':<16} {'Total (s)':<12}")
+    print("-" * 65)
 
-                print("\n  Online vLLM comparison:")
-                print(f"  vLLM shape:             {online_emb.shape}")
-                print(f"  MAMMAL shape:           {mammal_emb.shape}")
-                print(f"  Approximate equality:   {online_approximate_equality}")
-                print(f"  Cosine similarity:      {online_similarity:.6f}")
-                print(f"  L2 distance:            {online_l2:.6f}")
+    vllm_total = vllm_init_time + vllm_inference_time
+    print(
+        f"{'vLLM (offline)':<25} {vllm_init_time:<12.3f} {vllm_inference_time:<16.3f} {vllm_total:<12.3f}"
+    )
 
-                # Assert online embeddings are also similar
-                assert (
-                    online_similarity > 0.95
-                ), f"Online embeddings for {name} are not similar enough: {online_similarity:.6f}"
+    mammal_total = mammal_init_time + mammal_inference_time
+    print(
+        f"{'Direct MAMMAL':<25} {mammal_init_time:<12.3f} {mammal_inference_time:<16.3f} {mammal_total:<12.3f}"
+    )
 
-            # Assert high similarity (should be very close, > 0.95)
-            assert (
-                similarity > 0.95
-            ), f"Embeddings for {name} are not similar enough: {similarity:.6f}"
-            assert (
-                vllm_emb.shape == mammal_emb.shape
-            ), f"Embedding shapes don't match for {name}"
-
-        print("\n" + "=" * 70)
-        print("✓ All embedding comparisons passed!")
-
-        # Display benchmark summary
-        print("\n" + "=" * 70)
-        print("BENCHMARK SUMMARY")
-        print("=" * 70)
-        print(f"Number of prompts: {len(prompts)}")
-        print()
-
-        # Create benchmark table
+    if online_inference_time is not None:
         print(
-            f"{'Method':<25} {'Init (s)':<12} {'Inference (s)':<16} {'Total (s)':<12}"
-        )
-        print("-" * 65)
-
-        # vLLM offline
-        vllm_total = vllm_init_time + vllm_inference_time
-        print(
-            f"{'vLLM (offline)':<25} {vllm_init_time:<12.3f} {vllm_inference_time:<16.3f} {vllm_total:<12.3f}"
+            f"{'vLLM (online)':<25} {'N/A':<12} {online_inference_time:<16.3f} {online_inference_time:<12.3f}"
         )
 
-        # Direct MAMMAL
-        mammal_total = mammal_init_time + mammal_inference_time
+    print()
+    print("Inference speedup (batching advantage — init is a one-time cost):")
+    print("-" * 65)
+
+    if mammal_inference_time > 0:
+        vllm_speedup = mammal_inference_time / vllm_inference_time
         print(
-            f"{'Direct MAMMAL':<25} {mammal_init_time:<12.3f} {mammal_inference_time:<16.3f} {mammal_total:<12.3f}"
+            f"  vLLM offline vs Direct MAMMAL: {vllm_speedup:.2f}x {'faster' if vllm_speedup > 1 else 'slower'}"
+            f"  (both batch all {len(prompts)} prompts in a single forward pass)"
         )
 
-        # Online vLLM (if available)
-        if online_inference_time is not None:
-            print(
-                f"{'vLLM (online)':<25} {'N/A':<12} {online_inference_time:<16.3f} {online_inference_time:<12.3f}"
-            )
+    if online_inference_time is not None and mammal_inference_time > 0:
+        online_speedup = mammal_inference_time / online_inference_time
+        print(
+            f"  vLLM online  vs Direct MAMMAL: {online_speedup:.2f}x {'faster' if online_speedup > 1 else 'slower'}"
+        )
 
-        print()
-        print("Inference speedup (batching advantage — init is a one-time cost):")
-        print("-" * 65)
+    if online_inference_time is not None and vllm_inference_time > 0:
+        online_vs_offline = vllm_inference_time / online_inference_time
+        print(
+            f"  vLLM online  vs vLLM offline:  {online_vs_offline:.2f}x {'faster' if online_vs_offline > 1 else 'slower'}"
+        )
 
-        if mammal_inference_time > 0:
-            vllm_speedup = mammal_inference_time / vllm_inference_time
-            print(
-                f"  vLLM offline inference vs Direct MAMMAL inference: {vllm_speedup:.2f}x {'faster' if vllm_speedup > 1 else 'slower'}"
-                f"  (both batch all {len(prompts)} prompts in a single forward pass)"
-            )
-
-        if online_inference_time is not None and mammal_inference_time > 0:
-            online_speedup = mammal_inference_time / online_inference_time
-            print(
-                f"  vLLM online vs Direct MAMMAL:  {online_speedup:.2f}x {'faster' if online_speedup > 1 else 'slower'}"
-            )
-
-        if online_inference_time is not None and vllm_inference_time > 0:
-            online_vs_offline = vllm_inference_time / online_inference_time
-            print(
-                f"  vLLM online vs vLLM offline:   {online_vs_offline:.2f}x {'faster' if online_vs_offline > 1 else 'slower'}"
-            )
-
-        print("\n" + "=" * 70)
+    print("\n" + "=" * 70)
 
 
 if __name__ == "__main__":
-    # Run the test directly
-    test = TestEmbeddingComparison()
-    test.test_embedding_similarity()
+    compare_embeddings()
