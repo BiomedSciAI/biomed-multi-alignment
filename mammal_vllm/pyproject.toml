@@ -10,9 +10,9 @@ readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 dependencies = [
-    "vllm>=0.18",
+    "vllm>=0.26.0",
     "torch>=2.0.0",
-    "transformers>=4.40.0,<5",
+    "transformers>=5,<6",
     "biomed-multi-alignment",
 ]
 
@@ -34,3 +34,6 @@ target-version = "py310"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "requires_gpu: mark test as requiring a CUDA-capable GPU (skipped when torch.cuda.is_available() is False)",
+]

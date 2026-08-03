@@ -55,9 +55,9 @@ Use vLLM's Python API directly for embedding generation. See the complete exampl
 **📄 [`examples/offline_mammal_usage.py`](examples/offline_mammal_usage.py)**
 
 Key points:
-- Initialize LLM with `runner="pooling"` and `skip_tokenizer_init=True`
-- Use `tokenize_mammal()` from `vllm_mammal_plugin.tokenization` to tokenize inputs
-- Call `model.embed()` to generate embeddings
+- Initialize LLM with `runner="pooling"` and `tokenizer_mode="mammal"`
+- Pass plain text prompts directly to `model.embed()` — `MammalTokenizer` handles tokenization automatically
+- Embeddings are L2-normalized
 
 ### Online Serving (OpenAI-Compatible API)
 
@@ -70,16 +70,16 @@ Server command:
 vllm serve ibm-research/biomed.omics.bl.sm.ma-ted-458m \
     --runner pooling \
     --trust-remote-code \
-    --skip_tokenizer_init \
+    --tokenizer_mode mammal \
     --gpu_memory_utilization 0.4 \
     --enforce_eager \
     --no-enable-prefix-caching
 ```
 
 Key points:
-- Pre-tokenize inputs using `tokenize_mammal()` before sending to API
-- Use OpenAI client with the `/v1/embeddings` endpoint
-- Embeddings are automatically normalized
+- Pass plain text prompts directly — the server tokenizes via `MammalTokenizer` when started with `--tokenizer_mode mammal`
+- Use the OpenAI client with the `/v1/embeddings` endpoint
+- Embeddings are L2-normalized
 
 ---
 
@@ -116,9 +116,9 @@ COMPARE_ONLINE=true python tests/compare_embeddings.py
 ```
 mammal_vllm/
 ├── vllm_mammal_plugin/
-│   ├── __init__.py          # Plugin registration
+│   ├── __init__.py          # Plugin registration, tokenizer + renderer registration
 │   ├── mammal.py            # Model implementation
-│   └── tokenization.py      # Tokenization utilities
+│   └── tokenization.py      # MammalTokenizer (TokenizerLike wrapper)
 ├── examples/
 │   ├── __init__.py          # Package marker
 │   ├── example_prompts.py   # Pre-formatted example prompts

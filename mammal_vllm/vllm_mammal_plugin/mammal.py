@@ -91,9 +91,6 @@ class T5ForConditionalGeneration(nn.Module):
         # Hidden dimension used for embedding output.
         self.hidden_size: int = hf_config.d_model
 
-        # Store attention mask for pooling
-        self._flattened_attention_mask = None
-
         # Create pooler - vLLM will use this for pooling
         self._pooler = pooler_for_embed(
             PoolerConfig(seq_pooling_type="MEAN", use_activation=False)
@@ -223,7 +220,7 @@ class T5ForConditionalGeneration(nn.Module):
 
         MAMMAL checkpoints store weights under the prefix ``t5_model.*``:
           - t5_model.encoder.block.0...
-          - t5_model.decoder.embed_tokens.weight (used for encoder.shared)
+          - t5_model.lm_head.weight (the shared input embedding — tied to t5_model.shared)
           - t5_model.decoder.* (which we skip)
 
         Our model wraps T5EncoderModel as self.encoder, so parameters are:
@@ -232,7 +229,7 @@ class T5ForConditionalGeneration(nn.Module):
 
         We need to map:
           - t5_model.encoder.* → encoder.encoder.*
-          - t5_model.decoder.embed_tokens.weight → encoder.shared.weight
+          - t5_model.lm_head.weight → encoder.shared.weight
         """
         weights = list(weights)  # materialise so we can scan twice
 
@@ -253,8 +250,8 @@ class T5ForConditionalGeneration(nn.Module):
             if name.startswith("encoder_head.") or name.startswith("scalars_"):
                 continue
 
-            # Special case: MAMMAL uses decoder.embed_tokens for the shared embedding table
-            if name == "t5_model.decoder.embed_tokens.weight":
+            # Special case: MAMMAL uses lm_head.weight as the shared embedding table
+            if name == "t5_model.lm_head.weight":
                 param_name = "encoder.shared.weight"
                 if param_name in params_dict:
                     param = params_dict[param_name]
@@ -265,7 +262,7 @@ class T5ForConditionalGeneration(nn.Module):
                     loaded_params.add(param_name)
                 continue
 
-            # Skip other decoder weights
+            # Skip decoder weights and other lm_head
             if name.startswith("t5_model.decoder.") or name.startswith("lm_head."):
                 continue
 

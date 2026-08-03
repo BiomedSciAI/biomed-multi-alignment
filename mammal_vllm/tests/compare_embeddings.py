@@ -9,7 +9,7 @@ To use online comparison, start the server first:
     vllm serve ibm-research/biomed.omics.bl.sm.ma-ted-458m \
         --runner pooling \
         --trust-remote-code \
-        --skip_tokenizer_init \
+        --tokenizer_mode mammal \
         --gpu_memory_utilization 0.4 \
         --enforce_eager \
         --no-enable-prefix-caching
@@ -20,13 +20,13 @@ import time
 
 import numpy as np
 import torch
+from fuse.data.tokenizers.modular_tokenizer.op import ModularTokenizerOp
 from mammal.keys import (
     ENCODER_INPUTS_ATTENTION_MASK,
     ENCODER_INPUTS_TOKENS,
 )
 from mammal.model import Mammal
 from vllm import LLM
-from vllm.inputs import TokensPrompt
 
 from examples.example_prompts import (
     GENE_BRCA1,
@@ -36,11 +36,6 @@ from examples.example_prompts import (
     SMILES_ASPIRIN,
     SMILES_CAFFEINE,
     SMILES_ETHER,
-)
-from vllm_mammal_plugin.tokenization import (
-    get_mammal_tokenizer,
-    tokenize_mammal,
-    tokenize_mammal_with_attention_mask,
 )
 
 MODEL_NAME = "ibm-research/biomed.omics.bl.sm.ma-ted-458m"
@@ -52,13 +47,12 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def get_vllm_embeddings(
-    prompts: list[str], tokenizer_op=None
+    prompts: list[str],
 ) -> tuple[list, float, float]:
     """Get embeddings using vLLM plugin with utility functions.
 
     Args:
         prompts: List of text prompts to embed
-        tokenizer_op: Optional shared tokenizer instance
 
     Returns:
         Tuple of (embeddings, initialization_time, inference_time)
@@ -69,28 +63,17 @@ def get_vllm_embeddings(
         model=MODEL_NAME,
         runner="pooling",  # use the pooling / embedding runner
         trust_remote_code=True,  # MAMMAL uses custom tokenizer code
-        skip_tokenizer_init=True,  # Skip vLLM's tokenizer - we use MAMMAL's custom one
-        gpu_memory_utilization=0.4,  # Reduce GPU memory usage to fit in available memory
-        enforce_eager=True,  # Disable CUDA graphs to avoid device-side assert errors
-        enable_prefix_caching=False,  # Disable prefix/KV caching
+        tokenizer_mode="mammal",  # use MammalTokenizer via vLLM's registry
+        gpu_memory_utilization=0.4,
+        enforce_eager=True,
+        enable_prefix_caching=False,
     )
     init_time = time.time() - init_start
-
-    # Create tokenizer if not provided
-    if tokenizer_op is None:
-        tokenizer_op = get_mammal_tokenizer()
 
     # Time inference
     inference_start = time.time()
 
-    # Tokenize all prompts and create batch
-    token_prompts: list[TokensPrompt] = [
-        {"prompt_token_ids": tokenize_mammal(prompt, tokenizer_op)}
-        for prompt in prompts
-    ]
-
-    # Get embeddings for all prompts in a single batch
-    outputs = llm.embed(token_prompts)
+    outputs = llm.embed(prompts)
 
     # Extract embeddings from outputs
     embeddings = [np.array(output.outputs.embedding) for output in outputs]
@@ -101,13 +84,12 @@ def get_vllm_embeddings(
 
 
 def get_online_vllm_embeddings(
-    prompts: list[str], tokenizer_op=None, base_url: str = "http://localhost:8000/v1"
+    prompts: list[str], base_url: str = "http://localhost:8000/v1"
 ) -> tuple[list, float]:
     """Get embeddings using online vLLM server via OpenAI-compatible API.
 
     Args:
         prompts: List of text prompts to embed
-        tokenizer_op: Optional shared tokenizer instance
         base_url: Base URL for the vLLM server
 
     Returns:
@@ -120,20 +102,13 @@ def get_online_vllm_embeddings(
             "openai package is required for online comparison. Install with: pip install openai"
         )
 
-    # Create tokenizer if not provided
-    if tokenizer_op is None:
-        tokenizer_op = get_mammal_tokenizer()
-
     client = OpenAI(base_url=base_url, api_key="EMPTY")
 
     # Time inference
     inference_start = time.time()
 
-    # Tokenize all prompts using MAMMAL's custom tokenizer
-    token_ids_batch = [tokenize_mammal(prompt, tokenizer_op) for prompt in prompts]
-
-    # Send all tokenized prompts in a single batch request
-    response = client.embeddings.create(model=MODEL_NAME, input=token_ids_batch)
+    # Pass plain text — the server tokenizes via MammalTokenizer (tokenizer_mode=mammal)
+    response = client.embeddings.create(model=MODEL_NAME, input=prompts)
 
     # Extract embeddings from batch response
     embeddings = [np.array(data.embedding) for data in response.data]
@@ -144,14 +119,14 @@ def get_online_vllm_embeddings(
 
 
 def get_mammal_embeddings(
-    model_name: str, prompts: list[str], tokenizer_op=None
+    model_name: str, prompts: list[str], tokenizer_op: ModularTokenizerOp | None = None
 ) -> tuple[list, float, float]:
     """Get embeddings using direct MAMMAL model.
 
     Args:
         model_name: Name of the MAMMAL model to load
         prompts: List of text prompts to embed
-        tokenizer_op: Optional shared tokenizer instance
+        tokenizer_op: Optional shared ModularTokenizerOp instance
 
     Returns:
         Tuple of (embeddings, initialization_time, inference_time)
@@ -160,7 +135,9 @@ def get_mammal_embeddings(
     init_start = time.time()
     # Load model
     model = Mammal.from_pretrained(
-        pretrained_model_name_or_path=model_name, allow_config_mismatch=True
+        pretrained_model_name_or_path=model_name,
+        allow_config_mismatch=True,
+        strict=False,
     )
     model.eval()
 
@@ -170,61 +147,63 @@ def get_mammal_embeddings(
 
     # Create tokenizer if not provided
     if tokenizer_op is None:
-        tokenizer_op = get_mammal_tokenizer()
+        tokenizer_op = ModularTokenizerOp.from_pretrained(model_name)
 
-    # Time inference
+    # Tokenize all prompts and collect token_ids / attention_masks
+    all_token_ids = []
+    all_attention_masks = []
+    for prompt in prompts:
+        tokenized = tokenizer_op(
+            {"text": prompt},
+            key_in="text",
+            key_out_tokens_ids="input_ids",
+            key_out_attention_mask="attention_mask",
+        )
+        ids = tokenized["input_ids"]
+        mask = tokenized["attention_mask"]
+        if hasattr(ids, "tolist"):
+            ids = ids.tolist()
+        if hasattr(mask, "tolist"):
+            mask = mask.tolist()
+        all_token_ids.append(ids)
+        all_attention_masks.append(mask)
+
+    # Pad all sequences to the same length (right-pad with 0)
+    max_len = max(len(ids) for ids in all_token_ids)
+    padded_ids = [ids + [0] * (max_len - len(ids)) for ids in all_token_ids]
+    padded_mask = [mask + [0] * (max_len - len(mask)) for mask in all_attention_masks]
+
+    input_ids_tensor = torch.tensor(padded_ids, dtype=torch.long).to(device)  # [B, L]
+    attention_mask_tensor = torch.tensor(padded_mask, dtype=torch.long).to(
+        device
+    )  # [B, L]
+
+    # Time inference only (single batched forward pass, matching vLLM)
     inference_start = time.time()
-    embeddings = []
 
     with torch.no_grad():
-        for prompt in prompts:
-            # Tokenize using utility function with shared tokenizer
-            token_ids, attention_mask = tokenize_mammal_with_attention_mask(
-                prompt, tokenizer_op
-            )
+        batch_dict = {
+            ENCODER_INPUTS_TOKENS: input_ids_tensor,
+            ENCODER_INPUTS_ATTENTION_MASK: attention_mask_tensor,
+        }
+        input_embeddings = model._calculate_inputs_embeddings(batch_dict)  # [B, L, D]
 
-            # Convert to tensors and add batch dimension, then move to device
-            input_ids = torch.tensor(token_ids).unsqueeze(0).to(device)
-            attention_mask_tensor = torch.tensor(attention_mask).unsqueeze(0).to(device)
+        encoder_output = model.t5_model.encoder(
+            inputs_embeds=input_embeddings,
+            attention_mask=attention_mask_tensor,
+        )
 
-            # Create batch_dict with required keys for _calculate_inputs_embeddings
-            batch_dict = {
-                ENCODER_INPUTS_TOKENS: input_ids,
-                ENCODER_INPUTS_ATTENTION_MASK: attention_mask_tensor,
-            }
+        # Mean pooling over non-padding positions: [B, L, D] → [B, D]
+        last_hidden_state = encoder_output.last_hidden_state  # [B, L, D]
+        mask_expanded = attention_mask_tensor.unsqueeze(-1).float()  # [B, L, 1]
+        pooled = (last_hidden_state * mask_expanded).sum(dim=1) / mask_expanded.sum(
+            dim=1
+        )  # [B, D]
 
-            # Get input embeddings using the model's internal method
-            input_embeddings = model._calculate_inputs_embeddings(batch_dict)
+        # L2-normalise each embedding
+        pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)  # [B, D]
 
-            # Pass through encoder
-            encoder_output = model.t5_model.encoder(
-                inputs_embeds=input_embeddings,
-                attention_mask=attention_mask_tensor,
-            )
-
-            # Use mean pooling over sequence length (excluding padding)
-            last_hidden_state = (
-                encoder_output.last_hidden_state
-            )  # [batch, seq_len, hidden_dim]
-            attention_mask_expanded = attention_mask_tensor.unsqueeze(
-                -1
-            )  # [batch, seq_len, 1]
-
-            # Mean pooling
-            masked_hidden_state = last_hidden_state * attention_mask_expanded
-            sum_hidden_state = masked_hidden_state.sum(dim=1)  # [batch, hidden_dim]
-            sum_mask = attention_mask_expanded.sum(dim=1)  # [batch, 1]
-            pooled_output = sum_hidden_state / sum_mask  # [batch, hidden_dim]
-
-            # Convert to numpy and remove batch dimension
-            embedding = pooled_output.squeeze(0).cpu().numpy()
-
-            # Normalize the embedding (L2 normalization)
-            embedding_norm = np.linalg.norm(embedding)
-            if embedding_norm > 0:
-                embedding = embedding / embedding_norm
-
-            embeddings.append(embedding)
+    embeddings = [pooled[i].cpu().numpy() for i in range(len(prompts))]
 
     inference_time = time.time() - inference_start
 
@@ -247,7 +226,7 @@ class TestEmbeddingComparison:
         # Create a single tokenizer instance to be shared across all tokenization calls
         print("\n" + "=" * 70)
         print("Creating shared tokenizer...")
-        tokenizer_op = get_mammal_tokenizer(MODEL_NAME)
+        mammal_tokenizer_op = ModularTokenizerOp.from_pretrained(MODEL_NAME)
 
         prompts = [
             PROTEIN_CALMODULIN,
@@ -271,7 +250,7 @@ class TestEmbeddingComparison:
         print("\n" + "=" * 70)
         print("Getting embeddings from vLLM plugin (offline)...")
         vllm_embeddings, vllm_init_time, vllm_inference_time = get_vllm_embeddings(
-            prompts, tokenizer_op
+            prompts
         )
         print(f"  Initialization time: {vllm_init_time:.3f}s")
         print(f"  Inference time: {vllm_inference_time:.3f}s")
@@ -280,7 +259,7 @@ class TestEmbeddingComparison:
         print("\n" + "=" * 70)
         print("Getting embeddings from direct MAMMAL model...")
         mammal_embeddings, mammal_init_time, mammal_inference_time = (
-            get_mammal_embeddings(MODEL_NAME, prompts, tokenizer_op)
+            get_mammal_embeddings(MODEL_NAME, prompts, mammal_tokenizer_op)
         )
         print(f"  Initialization time: {mammal_init_time:.3f}s")
         print(f"  Inference time: {mammal_inference_time:.3f}s")
@@ -294,7 +273,7 @@ class TestEmbeddingComparison:
             print("Getting embeddings from online vLLM server...")
             try:
                 online_embeddings, online_inference_time = get_online_vllm_embeddings(
-                    prompts, tokenizer_op
+                    prompts
                 )
                 print(f"  Inference time: {online_inference_time:.3f}s")
                 print("✓ Successfully retrieved online embeddings")
@@ -369,40 +348,37 @@ class TestEmbeddingComparison:
 
         # Create benchmark table
         print(
-            f"{'Method':<25} {'Init Time (s)':<15} {'Inference Time (s)':<20} {'Total Time (s)':<15} {'Time per prompt (ms)':<20}"
+            f"{'Method':<25} {'Init (s)':<12} {'Inference (s)':<16} {'Total (s)':<12}"
         )
-        print("-" * 95)
+        print("-" * 65)
 
         # vLLM offline
         vllm_total = vllm_init_time + vllm_inference_time
-        vllm_per_prompt = (vllm_inference_time / len(prompts)) * 1000
         print(
-            f"{'vLLM (offline)':<25} {vllm_init_time:<15.3f} {vllm_inference_time:<20.3f} {vllm_total:<15.3f} {vllm_per_prompt:<20.2f}"
+            f"{'vLLM (offline)':<25} {vllm_init_time:<12.3f} {vllm_inference_time:<16.3f} {vllm_total:<12.3f}"
         )
 
         # Direct MAMMAL
         mammal_total = mammal_init_time + mammal_inference_time
-        mammal_per_prompt = (mammal_inference_time / len(prompts)) * 1000
         print(
-            f"{'Direct MAMMAL':<25} {mammal_init_time:<15.3f} {mammal_inference_time:<20.3f} {mammal_total:<15.3f} {mammal_per_prompt:<20.2f}"
+            f"{'Direct MAMMAL':<25} {mammal_init_time:<12.3f} {mammal_inference_time:<16.3f} {mammal_total:<12.3f}"
         )
 
         # Online vLLM (if available)
         if online_inference_time is not None:
-            online_per_prompt = (online_inference_time / len(prompts)) * 1000
             print(
-                f"{'vLLM (online)':<25} {'N/A':<15} {online_inference_time:<20.3f} {online_inference_time:<15.3f} {online_per_prompt:<20.2f}"
+                f"{'vLLM (online)':<25} {'N/A':<12} {online_inference_time:<16.3f} {online_inference_time:<12.3f}"
             )
 
         print()
-        print("Speedup Analysis:")
-        print("-" * 95)
+        print("Inference speedup (batching advantage — init is a one-time cost):")
+        print("-" * 65)
 
-        # Calculate speedups (inference only, since init is one-time cost)
         if mammal_inference_time > 0:
             vllm_speedup = mammal_inference_time / vllm_inference_time
             print(
-                f"  vLLM offline vs Direct MAMMAL: {vllm_speedup:.2f}x {'faster' if vllm_speedup > 1 else 'slower'}"
+                f"  vLLM offline inference vs Direct MAMMAL inference: {vllm_speedup:.2f}x {'faster' if vllm_speedup > 1 else 'slower'}"
+                f"  (both batch all {len(prompts)} prompts in a single forward pass)"
             )
 
         if online_inference_time is not None and mammal_inference_time > 0:

@@ -5,8 +5,8 @@ These tests do NOT require a running vLLM server.
 
 import numpy as np
 import pytest
+import torch
 from vllm import LLM
-from vllm.inputs import TokensPrompt
 
 from examples.example_prompts import (  # type: ignore[no-redef]
     GENE_BRCA1,
@@ -16,10 +16,7 @@ from examples.example_prompts import (  # type: ignore[no-redef]
     SMILES_ASPIRIN,
     SMILES_CAFFEINE,
 )
-from vllm_mammal_plugin.tokenization import (
-    get_mammal_tokenizer,
-    tokenize_mammal,
-)
+from vllm_mammal_plugin.tokenization import MammalTokenizer
 
 
 # ---------------------------------------------------------------------------
@@ -54,76 +51,56 @@ class TestPluginRegistration:
 # Tokenization utilities
 # ---------------------------------------------------------------------------
 class TestTokenization:
-    """Test tokenization utilities without requiring GPU."""
+    """Test MammalTokenizer without requiring GPU.
 
-    def test_tokenize_mammal_imports(self):
-        """Verify tokenization functions can be imported."""
-        from vllm_mammal_plugin.tokenization import (
-            get_mammal_tokenizer,
-            tokenize_mammal,
-            tokenize_mammal_with_attention_mask,
-        )
+    A single tokenizer instance is shared across all tests via a class-level
+    fixture to avoid redundant downloads/loads.
+    """
 
-        assert callable(tokenize_mammal)
-        assert callable(tokenize_mammal_with_attention_mask)
-        assert callable(get_mammal_tokenizer)
+    MODEL_NAME = "ibm-research/biomed.omics.bl.sm.ma-ted-458m"
 
-    def test_tokenize_protein(self):
-        """Test tokenizing a protein sequence."""
-        from vllm_mammal_plugin.tokenization import tokenize_mammal
+    @pytest.fixture(scope="class")
+    def tokenizer(self):
+        return MammalTokenizer.from_pretrained(self.MODEL_NAME)
 
-        token_ids = tokenize_mammal(PROTEIN_CALMODULIN)
+    def test_tokenizer_importable(self):
+        """Verify MammalTokenizer can be imported and constructed."""
+        assert callable(MammalTokenizer.from_pretrained)
 
-        assert isinstance(token_ids, list)
-        assert len(token_ids) > 0
-        assert all(isinstance(tid, int) for tid in token_ids)
+    def test_encode_all_modalities(self, tokenizer):
+        """Encoding protein, SMILES, and gene prompts all produce non-empty int lists,
+        and different inputs produce different token sequences."""
+        tokens = {
+            "protein": tokenizer.encode(PROTEIN_CALMODULIN),
+            "smiles": tokenizer.encode(SMILES_ASPIRIN),
+            "gene": tokenizer.encode(GENE_BRCA1),
+        }
+        for modality, ids in tokens.items():
+            assert isinstance(ids, list) and len(ids) > 0, modality
+            assert all(isinstance(t, int) for t in ids), modality
 
-    def test_tokenize_smiles(self):
-        """Test tokenizing a SMILES string."""
-        from vllm_mammal_plugin.tokenization import tokenize_mammal
+        assert tokens["protein"] != tokens["smiles"]
+        assert tokens["smiles"] != tokens["gene"]
 
-        token_ids = tokenize_mammal(SMILES_ASPIRIN)
+    def test_protocol_properties(self, tokenizer):
+        """MammalTokenizer satisfies the TokenizerLike protocol."""
+        assert isinstance(tokenizer.vocab_size, int) and tokenizer.vocab_size > 0
+        assert isinstance(tokenizer.max_token_id, int) and tokenizer.max_token_id > 0
+        assert isinstance(tokenizer.pad_token_id, int)
+        assert isinstance(tokenizer.eos_token_id, int)
+        assert tokenizer.is_fast is True
+        assert tokenizer.truncation_side == "right"
+        assert isinstance(tokenizer.all_special_tokens, list)
+        assert len(tokenizer.all_special_tokens) > 0
+        assert isinstance(tokenizer.get_vocab(), dict)
+        assert len(tokenizer.get_vocab()) > 0
 
-        assert isinstance(token_ids, list)
-        assert len(token_ids) > 0
-        assert all(isinstance(tid, int) for tid in token_ids)
-
-    def test_tokenize_with_attention_mask(self):
-        """Test tokenizing with attention mask."""
-        from vllm_mammal_plugin.tokenization import tokenize_mammal_with_attention_mask
-
-        token_ids, attention_mask = tokenize_mammal_with_attention_mask(
-            PROTEIN_CALMODULIN
-        )
-
-        assert isinstance(token_ids, list)
-        assert isinstance(attention_mask, list)
-        assert len(token_ids) == len(attention_mask)
-        assert all(isinstance(tid, int) for tid in token_ids)
-        assert all(mask in (0, 1) for mask in attention_mask)
-
-    def test_tokenizer_reuse(self):
-        """Test that tokenizer can be reused across multiple calls."""
-        from vllm_mammal_plugin.tokenization import (
-            get_mammal_tokenizer,
-            tokenize_mammal,
-        )
-
-        # Create tokenizer once
-        tokenizer = get_mammal_tokenizer()
-
-        # Use it multiple times
-        tokens1 = tokenize_mammal(PROTEIN_CALMODULIN, tokenizer)
-        tokens2 = tokenize_mammal(SMILES_ASPIRIN, tokenizer)
-        tokens3 = tokenize_mammal(GENE_BRCA1, tokenizer)
-
-        assert len(tokens1) > 0
-        assert len(tokens2) > 0
-        assert len(tokens3) > 0
-
-        # Verify different inputs produce different tokens
-        assert tokens1 != tokens2
-        assert tokens2 != tokens3
+    def test_call_returns_batch_encoding(self, tokenizer):
+        """__call__ returns a BatchEncoding with input_ids (used by vLLM's renderer)."""
+        encoding = tokenizer(PROTEIN_CALMODULIN)
+        assert "input_ids" in encoding
+        assert isinstance(encoding["input_ids"], list)
+        assert len(encoding["input_ids"]) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -240,6 +217,7 @@ class TestPromptFormatting:
 # ---------------------------------------------------------------------------
 # vLLM Embeddings (requires GPU and vLLM)
 # ---------------------------------------------------------------------------
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="requires GPU")
 class TestVLLMEmbeddings:
     """Test vLLM embedding generation (requires GPU and vLLM installed)."""
 
@@ -247,21 +225,18 @@ class TestVLLMEmbeddings:
         """Test that vLLM can generate embeddings for different modalities."""
         model_name = "ibm-research/biomed.omics.bl.sm.ma-ted-458m"
 
-        # Initialize vLLM model
+        # Initialize vLLM model — tokenizer_mode="mammal" enables plain-text input
         llm = LLM(
             model=model_name,
             runner="pooling",
             trust_remote_code=True,
-            skip_tokenizer_init=True,
+            tokenizer_mode="mammal",
             gpu_memory_utilization=0.4,
             enforce_eager=True,
             enable_prefix_caching=False,
         )
 
-        # Get tokenizer
-        tokenizer_op = get_mammal_tokenizer(model_name)
-
-        # Test different modalities
+        # Test different modalities using plain text prompts
         test_cases = [
             ("protein", PROTEIN_CALMODULIN, "Calmodulin"),
             ("smiles", SMILES_ASPIRIN, "Aspirin"),
@@ -270,12 +245,7 @@ class TestVLLMEmbeddings:
 
         embeddings = []
         for modality, prompt, name in test_cases:
-            # Tokenize
-            token_ids = tokenize_mammal(prompt, tokenizer_op)
-            token_prompt: TokensPrompt = {"prompt_token_ids": token_ids}
-
-            # Get embedding
-            outputs = llm.embed([token_prompt])
+            outputs = llm.embed([prompt])
             embedding = np.array(outputs[0].outputs.embedding)
             embeddings.append(embedding)
 
@@ -296,7 +266,6 @@ class TestVLLMEmbeddings:
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
                 cosine_sim = np.dot(embeddings[i], embeddings[j])
-                # Different modalities should have low similarity
                 assert (
                     cosine_sim < 0.9
                 ), f"Embeddings {i} and {j} are too similar: {cosine_sim:.6f}"
