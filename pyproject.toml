@@ -48,11 +48,8 @@ repository = "https://github.com/BiomedSciAI/biomed-multi-alignment"
 [project.entry-points."vllm.general_plugins"]
 mammal = "vllm_mammal_plugin:register_mammal_model"
 
-[tool.setuptools.packages]
-find = {exclude = ["mammal_vllm.vllm_mammal_plugin", "mammal_vllm.vllm_mammal_plugin.*"]}
-
-[tool.setuptools.package-dir]
-"vllm_mammal_plugin" = "mammal_vllm/vllm_mammal_plugin"
+[tool.setuptools.packages.find]
+where = [".", "mammal_vllm"]
 
 [tool.ruff]
 target-version = "py310"
