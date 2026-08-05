@@ -61,6 +61,7 @@ def get_vllm_embeddings(
     """
     # Time model initialization
     init_start = time.time()
+
     llm = LLM(
         model=MODEL_NAME,
         runner="pooling",  # use the pooling / embedding runner
@@ -70,6 +71,7 @@ def get_vllm_embeddings(
         enforce_eager=True,  # disable CUDA graphs to avoid device-side assert errors
         enable_prefix_caching=False,  # disable prefix/KV caching
     )
+
     init_time = time.time() - init_start
 
     # Time inference
@@ -133,9 +135,9 @@ def get_mammal_embeddings(
     Returns:
         Tuple of (embeddings, initialization_time, inference_time)
     """
-    # Time model initialization
+    # Time model and tokenization initialization
     init_start = time.time()
-    # Load model
+
     model = Mammal.from_pretrained(
         pretrained_model_name_or_path=model_name,
         allow_config_mismatch=True,
@@ -145,7 +147,6 @@ def get_mammal_embeddings(
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device=device)
-    init_time = time.time() - init_start
 
     # Create tokenizer if not provided
     if tokenizer_op is None:
@@ -179,6 +180,8 @@ def get_mammal_embeddings(
     attention_mask_tensor = torch.tensor(padded_mask, dtype=torch.long).to(
         device
     )  # [B, L]
+
+    init_time = time.time() - init_start
 
     # Time inference only (single batched forward pass, matching vLLM)
     inference_start = time.time()
@@ -244,11 +247,6 @@ def compare_embeddings() -> None:
         "BRCA1 (gene)",
     ]
 
-    # Create a single tokenizer instance shared across all MAMMAL tokenization calls
-    print("\n" + "=" * 70)
-    print("Creating shared tokenizer...")
-    mammal_tokenizer_op = ModularTokenizerOp.from_pretrained(MODEL_NAME)
-
     print("\n" + "=" * 70)
     print("Getting embeddings from vLLM plugin (offline)...")
     vllm_embeddings, vllm_init_time, vllm_inference_time = get_vllm_embeddings(prompts)
@@ -259,7 +257,7 @@ def compare_embeddings() -> None:
     print("\n" + "=" * 70)
     print("Getting embeddings from direct MAMMAL model...")
     mammal_embeddings, mammal_init_time, mammal_inference_time = get_mammal_embeddings(
-        MODEL_NAME, prompts, mammal_tokenizer_op
+        MODEL_NAME, prompts
     )
     print(f"  Initialization time: {mammal_init_time:.3f}s")
     print(f"  Inference time:      {mammal_inference_time:.3f}s")
@@ -295,7 +293,9 @@ def compare_embeddings() -> None:
         print(f"\n{name}:")
         print("  Offline vLLM comparison:")
         print(f"  vLLM shape:             {vllm_emb.shape}")
+        print(f"  vLLM embedding[0]:      {vllm_emb[0]}")
         print(f"  MAMMAL shape:           {mammal_emb.shape}")
+        print(f"  MAMMAL embedding[0]:    {mammal_emb[0]}")
         print(f"  Approximate equality:   {approximate_equality}")
         print(f"  Cosine similarity:      {similarity:.6f}")
         print(f"  L2 distance:            {l2_distance:.6f}")
@@ -307,7 +307,9 @@ def compare_embeddings() -> None:
 
             print("  Online vLLM comparison:")
             print(f"  vLLM shape:             {online_emb.shape}")
+            print(f"  vLLM embedding[0]:      {online_emb[0]}")
             print(f"  MAMMAL shape:           {mammal_emb.shape}")
+            print(f"  MAMMAL embedding[0]:    {mammal_emb[0]}")
             print(
                 f"  Approximate equality:   {np.allclose(online_emb, mammal_emb, atol=1e-3)}"
             )

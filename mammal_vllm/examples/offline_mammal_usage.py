@@ -31,15 +31,15 @@ def main():
 
     outputs = model.embed(prompts)
 
-    print("=" * 60)
-    print(f"{'Sequence':<30}  {'Embedding dim':>14}")
-    print("=" * 60)
+    print("=" * 100)
+    print(f"{'Sequence':<30}  {'Embedding dim':>14}  {'Embedding[0]'}")
+    print("=" * 100)
 
     embeddings = []
     for name, output in zip(names, outputs):
         emb = np.array(output.outputs.embedding)
         embeddings.append(emb)
-        print(f"{name:<30}  {emb.shape[0]:>14}")
+        print(f"{name:<30}  {emb.shape[0]:>14}  {emb[0]}")
 
 
 if __name__ == "__main__":

@@ -37,15 +37,15 @@ def main():
     # Pass plain text — the server tokenizes via MammalTokenizer (tokenizer_mode=mammal)
     response = client.embeddings.create(model=model_name, input=texts)
 
-    print("=" * 60)
-    print(f"{'Sequence':<30}  {'Embedding dim':>14}")
-    print("=" * 60)
+    print("=" * 100)
+    print(f"{'Sequence':<30}  {'Embedding dim':>14}  {'Embedding[0]'}")
+    print("=" * 100)
 
     embeddings = []
     for name, item in zip(names, response.data):
         emb = np.array(item.embedding)
         embeddings.append(emb)
-        print(f"{name:<30}  {emb.shape[0]:>14}")
+        print(f"{name:<30}  {emb.shape[0]:>14}  {emb[0]}")
 
 
 if __name__ == "__main__":

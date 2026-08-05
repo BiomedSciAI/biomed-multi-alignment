@@ -250,8 +250,9 @@ class T5ForConditionalGeneration(nn.Module):
             if name.startswith("encoder_head.") or name.startswith("scalars_"):
                 continue
 
-            # Special case: MAMMAL uses lm_head.weight as the shared embedding table
-            if name == "t5_model.lm_head.weight":
+            # The shared input embedding is stored as decoder.embed_tokens.weight
+            # (tied weights in the full T5 model). Load it once into encoder.shared.weight.
+            if name == "t5_model.decoder.embed_tokens.weight":
                 param_name = "encoder.shared.weight"
                 if param_name in params_dict:
                     param = params_dict[param_name]
@@ -262,8 +263,12 @@ class T5ForConditionalGeneration(nn.Module):
                     loaded_params.add(param_name)
                 continue
 
-            # Skip decoder weights and other lm_head
-            if name.startswith("t5_model.decoder.") or name.startswith("lm_head."):
+            # Skip all decoder weights and the lm_head output projection
+            if (
+                name.startswith("t5_model.decoder.")
+                or name.startswith("lm_head.")
+                or name == "t5_model.lm_head.weight"
+            ):
                 continue
 
             # Map checkpoint names to model parameter names:
