@@ -263,7 +263,8 @@ class T5ForConditionalGeneration(nn.Module):
                     loaded_params.add(param_name)
                 continue
 
-            # Skip all decoder weights and the lm_head output projection
+            # Skip decoder weights and the lm_head output projection. vLLM uses MAMMAL in encoder-only mode
+            # so we only load the T5 encoder weights to reduce memory usage.
             if (
                 name.startswith("t5_model.decoder.")
                 or name.startswith("lm_head.")
