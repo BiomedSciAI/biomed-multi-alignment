@@ -16,21 +16,19 @@ MAMMAL is a 458M-parameter T5-style encoder-decoder model trained on over 2 bill
 
 ## Installation
 
-### Prerequisites
+The vLLM plugin is part of the `biomed-multi-alignment` package and is installed via the `vllm` extra.
 
-This plugin requires [uv](https://docs.astral.sh/uv/) for package management. If you don't have it installed:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
 ### From source
 
 ```bash
-# Navigate to the mammal_vllm directory
-cd /path/to/biomed-multi-alignment/mammal_vllm
+git clone git@github.com:BiomedSciAI/biomed-multi-alignment.git
+pip install -e "./biomed-multi-alignment[vllm]"
+```
 
-# Install with all dependencies
-pip install -e .
+### From PyPI
+
+```bash
+pip install "biomed-multi-alignment[vllm]"
 ```
 
 ### Verification
@@ -42,7 +40,7 @@ from vllm_mammal_plugin import register_mammal_model
 print("Plugin successfully installed!")
 ```
 
-vLLM auto-discovers the plugin via the `entry_points` mechanism defined in `pyproject.toml`.
+vLLM auto-discovers the plugin via the `vllm.general_plugins` entry point declared in the root `pyproject.toml`.
 
 ---
 
@@ -55,9 +53,9 @@ Use vLLM's Python API directly for embedding generation. See the complete exampl
 **📄 [`examples/offline_mammal_usage.py`](examples/offline_mammal_usage.py)**
 
 Key points:
-- Initialize LLM with `runner="pooling"` and `skip_tokenizer_init=True`
-- Use `tokenize_mammal()` from `vllm_mammal_plugin.tokenization` to tokenize inputs
-- Call `model.embed()` to generate embeddings
+- Initialize LLM with `runner="pooling"` and `tokenizer_mode="mammal"`
+- Pass plain text prompts directly to `model.embed()` — `MammalTokenizer` handles tokenization automatically
+- Embeddings are L2-normalized
 
 ### Online Serving (OpenAI-Compatible API)
 
@@ -70,20 +68,18 @@ Server command:
 vllm serve ibm-research/biomed.omics.bl.sm.ma-ted-458m \
     --runner pooling \
     --trust-remote-code \
-    --skip_tokenizer_init \
+    --tokenizer_mode mammal \
     --gpu_memory_utilization 0.4 \
     --enforce_eager \
     --no-enable-prefix-caching
 ```
 
 Key points:
-- Pre-tokenize inputs using `tokenize_mammal()` before sending to API
-- Use OpenAI client with the `/v1/embeddings` endpoint
-- Embeddings are automatically normalized
+- Pass plain text prompts directly — the server tokenizes via `MammalTokenizer` when started with `--tokenizer_mode mammal`
+- Use the OpenAI client with the `/v1/embeddings` endpoint
+- Embeddings are L2-normalized
 
----
-
-## MAMMAL Input Format
+### MAMMAL Input Format
 
 See [`examples/example_prompts.py`](examples/example_prompts.py) for pre-formatted example prompts.
 
@@ -91,44 +87,48 @@ See [`examples/example_prompts.py`](examples/example_prompts.py) for pre-formatt
 
 ## Testing
 
-### Run Unit Tests
+### Run all tests
 
 ```bash
-# Run all tests
-pytest tests/plugin_unittests.py -v
-pytest tests/compare_embeddings.py -v
+pytest tests/ -v
 ```
 
-### Run Embedding Comparison Tests
+### Embedding comparison benchmark
 
-Compare embeddings from vLLM plugin vs direct MAMMAL model:
+`compare_embeddings.py` is a standalone benchmark script (not collected by
+pytest) that compares embeddings produced by the vLLM plugin with those generated directly by the MAMMAL model. It reports timing and embedding similarity metrics across all supported modalities.
 
 ```bash
-# Basic test (offline vLLM vs direct MAMMAL)
+# Offline vLLM vs direct MAMMAL
 python tests/compare_embeddings.py
 
-# Include online vLLM server comparison (requires server running)
+# Also compare against a running vLLM server
 COMPARE_ONLINE=true python tests/compare_embeddings.py
 ```
 
 ## Project Structure
 
+This directory lives inside the `biomed-multi-alignment` repo.
+
 ```
 mammal_vllm/
 ├── vllm_mammal_plugin/
-│   ├── __init__.py          # Plugin registration
-│   ├── mammal.py            # Model implementation
-│   └── tokenization.py      # Tokenization utilities
+│   ├── __init__.py              # Plugin registration, tokenizer + renderer registration
+│   ├── mammal.py                # Model implementation
+│   └── tokenization.py          # MammalTokenizer (TokenizerLike wrapper)
 ├── examples/
-│   ├── __init__.py          # Package marker
-│   ├── example_prompts.py   # Pre-formatted example prompts
+│   ├── __init__.py              # Package marker
+│   ├── example_prompts.py       # Pre-formatted example prompts
 │   ├── offline_mammal_usage.py  # Offline inference example
 │   └── online_mammal_usage.py   # Online serving example
 ├── tests/
-│   ├── plugin_unittests.py  # Unit tests
-│   └── compare_embeddings.py  # Integration tests
-├── __init__.py              # Root package marker
-├── pyproject.toml           # Project configuration
-├── setup.py                 # Setup script
-└── README.md                # This file
+│   ├── conftest.py              # pytest config: sys.path, requires_gpu marker
+│   ├── compare_embeddings.py    # Embedding standalone benchmark script
+│   ├── test_registration.py     # Plugin importability (CPU-only)
+│   ├── test_example_prompts.py  # Prompt constant structure (CPU-only)
+│   ├── test_tokenization.py     # MammalTokenizer (CPU-only)
+│   ├── test_embeddings.py       # vLLM offline embeddings (GPU)
+│   └── test_compare_embeddings.py  # vLLM vs MAMMAL comparison (GPU)
+├── __init__.py                  # Root package marker
+└── README.md                    # This file
 ```

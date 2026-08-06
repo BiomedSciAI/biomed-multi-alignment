@@ -6,15 +6,12 @@ Usage:
 """
 
 import numpy as np
-from vllm import LLM
-from vllm.inputs import TokensPrompt
-
 from examples.example_prompts import (
     GENE_BRCA1,
     PROTEIN_CALMODULIN,
     SMILES_ASPIRIN,
 )
-from vllm_mammal_plugin.tokenization import *
+from vllm import LLM
 
 
 def main():
@@ -23,31 +20,26 @@ def main():
         model=model_name,
         runner="pooling",  # use the pooling / embedding runner
         trust_remote_code=True,  # MAMMAL uses custom tokenizer code
-        skip_tokenizer_init=True,  # Skip vLLM's tokenizer - we use MAMMAL's custom one
-        gpu_memory_utilization=0.4,  # Reduce GPU memory usage to fit in available memory
-        enforce_eager=True,  # Disable CUDA graphs to avoid device-side assert errors
-        enable_prefix_caching=False,  # Disable prefix/KV caching
+        tokenizer_mode="mammal",  # use MAMMAL's ModularTokenizerOp via vLLM's registry
+        gpu_memory_utilization=0.4,  # reduce GPU memory usage to fit in available memory
+        enforce_eager=True,  # disable CUDA graphs to avoid device-side assert errors
+        enable_prefix_caching=False,  # disable prefix/KV caching
     )
 
     names = ["Calmodulin (protein)", "Aspirin (SMILES)", "BRCA1 (gene)"]
-    prompts: list[TokensPrompt] = [
-        {"prompt_token_ids": tokenize_mammal(PROTEIN_CALMODULIN)},
-        {"prompt_token_ids": tokenize_mammal(SMILES_ASPIRIN)},
-        {"prompt_token_ids": tokenize_mammal(GENE_BRCA1)},
-    ]
+    prompts = [PROTEIN_CALMODULIN, SMILES_ASPIRIN, GENE_BRCA1]
 
     outputs = model.embed(prompts)
 
-    print("=" * 60)
-    print(f"{'Sequence':<30}  {'Embedding dim':>14}")
-    print("=" * 60)
+    print("=" * 100)
+    print(f"{'Sequence':<30}  {'Embedding dim':>14}  {'Embedding[0]'}")
+    print("=" * 100)
 
     embeddings = []
     for name, output in zip(names, outputs):
         emb = np.array(output.outputs.embedding)
         embeddings.append(emb)
-        print(f"{name:<30}  {emb.shape[0]:>14}")
-        # print (f"Embedding: {name:<30} {emb}")
+        print(f"{name:<30}  {emb.shape[0]:>14}  {emb[0]}")
 
 
 if __name__ == "__main__":

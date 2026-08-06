@@ -7,7 +7,8 @@ allowing it to be used with vLLM's inference engine.
 from transformers import AutoConfig, PretrainedConfig
 from vllm.logger import init_logger
 from vllm.model_executor.models.registry import ModelRegistry
-
+from vllm.renderers.registry import RENDERER_REGISTRY
+from vllm.tokenizers import TokenizerRegistry
 from vllm_mammal_plugin.mammal import MammalConfig
 
 __version__ = "0.1.0"
@@ -30,6 +31,26 @@ def register_mammal_model() -> None:
             "vllm_mammal_plugin.mammal:T5ForConditionalGeneration",
         )
         logger.info("Successfully registered MAMMAL model with vLLM")
+
+        # Register MAMMAL's custom tokenizer so callers can use
+        # tokenizer_mode="mammal" and pass plain text prompts
+        TokenizerRegistry.register(
+            "mammal",
+            "vllm_mammal_plugin.tokenization",
+            "MammalTokenizer",
+        )
+        logger.info("Registered MammalTokenizer under tokenizer_mode='mammal'")
+
+        # The renderer_mode is derived 1:1 from tokenizer_mode, so we must
+        # also register "mammal" in the RendererRegistry.  The standard
+        # HfRenderer handles all text/token prompt plumbing and works with any
+        # TokenizerLike, including MammalTokenizer.
+        RENDERER_REGISTRY.register(
+            "mammal",
+            "vllm.renderers.hf",
+            "HfRenderer",
+        )
+        logger.info("Registered HfRenderer under renderer_mode='mammal'")
 
     except Exception as e:
         logger.error(f"Failed to register MAMMAL model: {e}")

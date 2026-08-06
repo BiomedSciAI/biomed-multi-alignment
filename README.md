@@ -6,8 +6,6 @@
 
 # biomed-multi-alignment
 
-**Update - MCP is now supported for MAMMAL agent integration visit [here](./mammal_mcp/README.md) for more information.**
-
 We introduce [**ibm/biomed.omics.bl.sm.ma-ted-458m**](https://arxiv.org/abs/2410.22367).
 A biomedical foundation model trained on over 2 billion biological samples across multiple modalities, including proteins, small molecules, and single-cell gene expression data.
 Designed for robust performance, it achieves state-of-the-art results on a variety of tasks across the entire drug discovery pipeline and diverse biomedical domains.
@@ -48,7 +46,22 @@ Follow the next steps to install MAMMAL in a new environment:
    pip install biomed-multi-alignment[examples]
    ```
 
+### Optional extras
 
+| Extra | What it adds | Install command |
+|---|---|---|
+| `examples` | Example tasks spanning multiple domains, including fine-tuning and inference | `pip install "biomed-multi-alignment[examples]"` |
+| `vllm` | vLLM plugin for high-throughput embedding inference via `vllm_mammal_plugin` | `pip install "biomed-multi-alignment[vllm]"` |
+
+To install multiple extras at once:
+```
+pip install "biomed-multi-alignment[examples,vllm]"
+```
+
+### MCP server
+
+This repository also includes the [`mammal_mcp`](mammal_mcp/README.md) subproject, which provides an MCP server for exposing MAMMAL inference tools to AI agents.
+See the MCP-specific setup and usage instructions in [`mammal_mcp/README.md`](mammal_mcp/README.md).
 
 
 # Examples

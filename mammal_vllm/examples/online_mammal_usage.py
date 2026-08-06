@@ -8,7 +8,7 @@ Start the server first:
     vllm serve ibm-research/biomed.omics.bl.sm.ma-ted-458m \
         --runner pooling \
         --trust-remote-code \
-        --skip_tokenizer_init \
+        --tokenizer_mode mammal \
         --gpu_memory_utilization 0.4 \
         --enforce_eager \
         --no-enable-prefix-caching
@@ -19,14 +19,12 @@ Then run this script:
 """
 
 import numpy as np
-from openai import OpenAI
-
 from examples.example_prompts import (
     GENE_BRCA1,
     PROTEIN_CALMODULIN,
     SMILES_ASPIRIN,
 )
-from vllm_mammal_plugin.tokenization import tokenize_mammal
+from openai import OpenAI
 
 
 def main():
@@ -36,21 +34,18 @@ def main():
     names = ["Calmodulin (protein)", "Aspirin (SMILES)", "BRCA1 (gene)"]
     texts = [PROTEIN_CALMODULIN, SMILES_ASPIRIN, GENE_BRCA1]
 
-    # Tokenize the inputs using MAMMAL's custom tokenizer
-    tokenized_inputs = [tokenize_mammal(text) for text in texts]
+    # Pass plain text — the server tokenizes via MammalTokenizer (tokenizer_mode=mammal)
+    response = client.embeddings.create(model=model_name, input=texts)
 
-    response = client.embeddings.create(model=model_name, input=tokenized_inputs)
-
-    print("=" * 60)
-    print(f"{'Sequence':<30}  {'Embedding dim':>14}")
-    print("=" * 60)
+    print("=" * 100)
+    print(f"{'Sequence':<30}  {'Embedding dim':>14}  {'Embedding[0]'}")
+    print("=" * 100)
 
     embeddings = []
     for name, item in zip(names, response.data):
         emb = np.array(item.embedding)
         embeddings.append(emb)
-        print(f"{name:<30}  {emb.shape[0]:>14}")
-        # print (f"Embedding: {name:<30} {emb}")
+        print(f"{name:<30}  {emb.shape[0]:>14}  {emb[0]}")
 
 
 if __name__ == "__main__":
