@@ -11,7 +11,8 @@ Start the server first:
         --tokenizer_mode mammal \
         --gpu_memory_utilization 0.4 \
         --enforce_eager \
-        --no-enable-prefix-caching
+        --no-enable-prefix-caching \
+        --no-enable_chunked_prefill
 
 Then run this script:
 

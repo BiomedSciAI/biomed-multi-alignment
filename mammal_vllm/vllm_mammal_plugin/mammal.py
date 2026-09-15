@@ -34,6 +34,12 @@ class MammalConfig(PretrainedConfig):
     model_type = "t5"
 
     def __init__(self, **kwargs):
+        # MAMMAL config.json stores T5 parameters under a nested 't5_config'
+        # key.  vLLM reads vocab_size directly from the top-level HF config
+        # object, so we must hoist it before calling super().__init__().
+        t5_cfg = kwargs.get("t5_config")
+        if isinstance(t5_cfg, dict) and "vocab_size" not in kwargs:
+            kwargs["vocab_size"] = t5_cfg.get("vocab_size", 0)
         super().__init__(**kwargs)
 
 

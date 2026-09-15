@@ -45,6 +45,7 @@ class TestVLLMEmbeddings:
             gpu_memory_utilization=0.4,
             enforce_eager=True,
             enable_prefix_caching=False,
+            enable_chunked_prefill=False,
         )
 
     @pytest.mark.parametrize(
