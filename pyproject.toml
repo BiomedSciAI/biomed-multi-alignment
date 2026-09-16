@@ -15,7 +15,7 @@ authors = [
   {name="IBM Research"},
   {name="Moshe Raboh", email="moshiko.raboh@ibm.com"}
   ]
-version = "0.2.5"
+version = "0.2.6"
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 # due to how PEP 440 defines version matching, prefer [incl, excl) definitions like below:
@@ -38,7 +38,7 @@ examples = [
   "click",
 ]
 vllm = [
-  "vllm>=0.26.0",
+  "vllm>=0.29.0",
   "torch>=2.0.0",
 ]
 

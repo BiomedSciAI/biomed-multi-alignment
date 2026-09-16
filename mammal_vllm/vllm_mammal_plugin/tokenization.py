@@ -48,10 +48,11 @@ class MammalTokenizer:
             cache_dir=download_dir,
             **modular_kwargs,
         )
-        return cls(op)
+        return cls(op, name_or_path=str(path_or_repo_id))
 
-    def __init__(self, op: ModularTokenizerOp) -> None:
+    def __init__(self, op: ModularTokenizerOp, name_or_path: str = "") -> None:
         self._op = op
+        self.name_or_path: str = name_or_path
         _, self._max_token_id = op.get_max_token_id()
         self._pad_token_id: int = op.get_token_id("<PAD>")
         self._eos_token_id: int = op.get_token_id("<EOS>")

@@ -24,6 +24,7 @@ def main():
         gpu_memory_utilization=0.4,  # reduce GPU memory usage to fit in available memory
         enforce_eager=True,  # disable CUDA graphs to avoid device-side assert errors
         enable_prefix_caching=False,  # disable prefix/KV caching
+        enable_chunked_prefill=False,  # chunked prefill adds scheduling overhead with no benefit for embedding workloads
     )
 
     names = ["Calmodulin (protein)", "Aspirin (SMILES)", "BRCA1 (gene)"]

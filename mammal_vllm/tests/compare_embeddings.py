@@ -14,7 +14,8 @@ To start the server::
         --tokenizer_mode mammal \
         --gpu_memory_utilization 0.4 \
         --enforce_eager \
-        --no-enable-prefix-caching
+        --no-enable-prefix-caching \
+        --no-enable_chunked_prefill
 """
 
 import os
@@ -70,6 +71,7 @@ def get_vllm_embeddings(
         gpu_memory_utilization=0.4,  # reduce GPU memory usage to fit in available memory
         enforce_eager=True,  # disable CUDA graphs to avoid device-side assert errors
         enable_prefix_caching=False,  # disable prefix/KV caching
+        enable_chunked_prefill=False,  # no benefit for embedding workloads
     )
 
     init_time = time.time() - init_start
